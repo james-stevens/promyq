@@ -1,0 +1,18 @@
+home_currency: USD
+
+hl_sipp:
+  name: "HL SIPP"
+  stocks:
+    - ticker: TSLA
+      price: 240.00
+      quantity: 234
+      date_bought: 2022-11-11 11:11
+      exchange_rate: 1
+      total_cost: 56170
+
+    - ticker: QQQ
+      price: 480.00
+      quantity: 375
+      date_bought: 2022-10-10 10:10
+      exchange_rate: 1
+      total_cost: 180010
