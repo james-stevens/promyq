@@ -8,3 +8,6 @@ RUN pip install yahooquery
 RUN pip install yahooquery --upgrade
 
 RUN apk add py3-flask py3-gunicorn
+
+COPY python /usr/local/python/
+RUN python3 -m compileall /opt/pyrar/python/
