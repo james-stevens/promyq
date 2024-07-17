@@ -3,5 +3,5 @@
 docker run -it \
 	-e PROMYQ_REFRESH_INTERVAL=20s \
 	-v /opt/promyq:/opt/data \
-	-p 8000:8000 -p 9090:9090 \
+	-p 8000:8000 -p 9090:9090 -p 3000:3000 \
 	$(cat list) $@

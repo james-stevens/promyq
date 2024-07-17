@@ -1,0 +1,9 @@
+#! /bin/sh
+
+mkdir -p /opt/data/grafana/data /opt/data/grafana/plugins
+chown -R grafana: /opt/data/grafana
+
+exec /usr/sbin/grafana-server \
+	--pidfile=/run/grafana.pid \
+	--homepath=/usr/share/grafana \
+	2>&1 | exec logger -t grafana

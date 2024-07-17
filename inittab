@@ -2,3 +2,4 @@
 ::respawn:/usr/local/bin/start_wsgi
 ::respawn:/usr/local/bin/start_nginx
 ::respawn:/usr/local/bin/start_prometheus
+::respawn:/usr/local/bin/start_grafana

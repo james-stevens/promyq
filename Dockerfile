@@ -25,7 +25,13 @@ COPY index.html /opt/htdocs/
 
 COPY nginx.conf /etc/nginx/
 
-RUN apk add prometheus
+RUN apk add prometheus grafana
+
+RUN rm -rf /usr/share/grafana/data /usr/share/grafana/plugins
+RUN ln -s /opt/data/grafana/data /usr/share/grafana/data
+RUN ln -s /opt/data/grafana/plugins /usr/share/grafana/plugins
+
+COPY conf /usr/share/grafana/conf/
 
 COPY etc /usr/local/etc/
 COPY bin /usr/local/bin/
