@@ -1,0 +1,8 @@
+#! /bin/sh
+
+if test "${SYSLOG_SERVER}"
+	then
+		exec /sbin/syslogd -n -R ${SYSLOG_SERVER}
+	else
+		exec /sbin/syslogd -n -O -
+	fi

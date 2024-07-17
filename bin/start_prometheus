@@ -1,0 +1,13 @@
+#! /bin/sh
+
+if test -z "${PROMYQ_REFRESH_INTERVAL}"; then export PROMYQ_REFRESH_INTERVAL="300s"; fi
+
+awk '{
+	for (a in ENVIRON) gsub("{{" _ a _ "}}",ENVIRON[a]);
+	print
+	}' /usr/local/etc/prometheus.yml > /run/prometheus.yml
+
+exec /usr/bin/prometheus \
+	--storage.tsdb.path=/opt/data/prometheus \
+	--storage.tsdb.retention.time=${PROMYQ_RETENTION_TIME:-180d} \
+	--config.file="/run/prometheus.yml" 2>&1 | exec logger -t prometheus

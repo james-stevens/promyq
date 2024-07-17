@@ -9,7 +9,7 @@ import yaml
 import yahooquery
 
 application = flask.Flask("PromYQ")
-with open("../stocks.yaml") as fd:
+with open("/usr/local/etc/promyq.yaml") as fd:
     trades = yaml.load(fd.read(), Loader=yaml.FullLoader)
 
 home_currency = trades["home_currency"] if "home_currency" in trades else "USD"
@@ -41,6 +41,10 @@ def get_all_prices():
 
 
 def process_item(retlist, account_name, this_trade, this_price):
+    if "regularMarketPrice" not in this_price:
+        print(">>>>> ERROR: regularMarketPrice not in ",this_price)
+        return
+
     current_value = this_price["regularMarketPrice"] * this_trade["quantity"]
 
     infill = ("{" + f"account=\"{account_name}\"," +

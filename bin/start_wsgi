@@ -1,0 +1,7 @@
+#! /bin/sh
+# (c) Copyright 2019-2020, James Stevens ... see LICENSE for details
+# Alternative license arrangements are possible, contact me for more information
+
+cd /usr/local/python
+exec gunicorn --threads 3 --bind unix:/run/promyq.sock wsgi 2>&1 \
+	| exec logger -t promyq -p local0.info

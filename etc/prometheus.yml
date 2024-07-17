@@ -1,0 +1,8 @@
+global:
+  scrape_interval: {{PROMYQ_REFRESH_INTERVAL}}
+  evaluation_interval: {{PROMYQ_REFRESH_INTERVAL}}
+
+scrape_configs:
+  - job_name: 'stocks'
+    static_configs:
+      - targets: ['127.0.0.1:8000']

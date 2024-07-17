@@ -1,0 +1,4 @@
+::respawn:/usr/local/bin/start_syslogd
+::respawn:/usr/local/bin/start_wsgi
+::respawn:/usr/local/bin/start_nginx
+::respawn:/usr/local/bin/start_prometheus
