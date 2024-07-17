@@ -43,20 +43,15 @@ def get_all_prices():
 def process_item(retlist, account_name, this_trade, this_price):
     current_value = this_price["regularMarketPrice"] * this_trade["quantity"]
 
-    infill = (f"account=\"{account_name}\"," +
+    infill = ("{" + f"account=\"{account_name}\"," +
               f"ticker=\"{this_trade['ticker']}\"," +
-              f"when=\"{this_trade['date_bought']}\","
-              ) + f"market=\"{this_price['marketState']}\""
+              f"when=\"{this_trade['date_bought']}\"" + "} ")
 
-    retlist.append(
-        f"# HELP trade_current_value Trade current value in {home_currency}")
-    retlist.append("# TYPE trade_current_value gauge")
-    retlist.append("trade_current_value{" + infill + "} " +
+    retlist.append(f"trade_market_open{infill}" +
+                   ("1" if this_price['marketState'] == "REGULAR" else "0"))
+    retlist.append(f"trade_current_value{infill}" +
                    format(current_value, f".{decimal_places}f"))
-    retlist.append(
-        f"# HELP trade_current_profit Trade current profit in {home_currency}")
-    retlist.append("# TYPE trade_current_profit gauge")
-    retlist.append("trade_current_value{" + infill + "} " +
+    retlist.append(f"trade_current_profit{infill}" +
                    format(current_value -
                           this_trade["total_cost"], f".{decimal_places}f"))
 
@@ -64,7 +59,14 @@ def process_item(retlist, account_name, this_trade, this_price):
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
     all_prices = get_all_prices()
-    retlist = []
+    retlist = [
+        f"# HELP trade_current_value Trade current value in {home_currency}",
+        "# TYPE trade_current_value gauge",
+        f"# HELP trade_current_profit Trade current profit in {home_currency}",
+        "# TYPE trade_current_profit gauge",
+        "# HELP trade_market_open Is the market for this trade open",
+        "# TYPE trade_market_open gauge"
+    ]
 
     for acct in trades:
         if "stocks" in trades[acct]:
