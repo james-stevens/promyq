@@ -59,7 +59,14 @@ promyq = PromYQ()
 
 
 def trade_metrics(retlist, acct, this_trade):
-    this_price = promyq.prices[this_trade["ticker"]]
+    if "ticker" not in this_trade:
+        return
+
+    this_ticker = this_trade["ticker"]
+    if this_ticker not in promyq.prices:
+        return
+
+    this_price = promyq.prices[this_ticker]
     this_acct = promyq.trades[acct]
     acct_name = this_acct['name'] if "name" in this_acct else acct
 
@@ -71,13 +78,15 @@ def trade_metrics(retlist, acct, this_trade):
 
     infill_dict = {
         "account": acct_name,
-        "ticker": this_trade['ticker'],
+        "ticker": this_ticker,
         "when": this_trade['date_bought']
     }
     if "tags" in this_acct:
         infill_dict.update(this_acct["tags"])
     if "tags" in this_trade:
         infill_dict.update(this_trade["tags"])
+    if "tags" in promyq.trades and this_ticker in promyq.trades["tags"]:
+        infill_dict.update(promyq.trades["tags"][this_ticker])
 
     infill = "{" + ",".join(
         [f"{idx}:\"{val}\"" for idx, val in infill_dict.items()]) + "} "
@@ -111,9 +120,7 @@ def get_metrics():
         this_acct = promyq.trades[acct]
         if "stocks" in this_acct:
             for this_trade in this_acct["stocks"]:
-                if "ticker" in this_trade and this_trade[
-                        "ticker"] in promyq.prices:
-                    trade_metrics(retlist, acct, this_trade)
+                trade_metrics(retlist, acct, this_trade)
 
     resp = flask.make_response("\n".join(retlist) + "\n", 200)
     return resp
