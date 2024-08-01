@@ -9,9 +9,6 @@ RUN pip install yahooquery --upgrade
 
 RUN apk add py3-flask py3-gunicorn py3-yaml
 
-COPY python /usr/local/python/
-RUN python3 -m compileall /opt/pyrar/python/
-
 RUN apk add nginx
 
 RUN rm -rf /run/
@@ -35,6 +32,9 @@ COPY conf /usr/share/grafana/conf/
 
 COPY etc /usr/local/etc/
 COPY bin /usr/local/bin/
+
+COPY python /usr/local/python/
+RUN python3 -m compileall /opt/pyrar/python/
 
 COPY inittab /etc/inittab
 CMD [ "/sbin/init" ]
