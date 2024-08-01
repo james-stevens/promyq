@@ -2,6 +2,7 @@ home_currency: USD
 
 hl_sipp:
   name: "HL SIPP"
+
   stocks:
     - ticker: TSLA
       price: 240.00
@@ -16,3 +17,5 @@ hl_sipp:
       date_bought: 2022-10-10 10:10
       exchange_rate: 1
       total_cost: 180010
+      tags:
+        type: tracker

@@ -58,8 +58,11 @@ class PromYQ:
 promyq = PromYQ()
 
 
-def trade_metrics(retlist, account_name, this_trade):
+def trade_metrics(retlist, acct, this_trade):
     this_price = promyq.prices[this_trade["ticker"]]
+    this_acct = promyq.trades[acct]
+    acct_name = this_acct['name'] if "name" in this_acct else acct
+
     if "regularMarketPrice" not in this_price:
         syslog.syslog(f"ERROR: regularMarketPrice not in - {this_price}")
         return
@@ -67,10 +70,14 @@ def trade_metrics(retlist, account_name, this_trade):
     current_value = this_price["regularMarketPrice"] * this_trade["quantity"]
 
     infill_dict = {
-        "account": account_name,
+        "account": acct_name,
         "ticker": this_trade['ticker'],
         "when": this_trade['date_bought']
     }
+    if "tags" in this_acct:
+        infill_dict.update(this_acct["tags"])
+    if "tags" in this_trade:
+        infill_dict.update(this_trade["tags"])
 
     infill = "{" + ",".join(
         [f"{idx}:\"{val}\"" for idx, val in infill_dict.items()]) + "} "
@@ -87,6 +94,9 @@ def trade_metrics(retlist, account_name, this_trade):
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
     promyq.get_prices()
+    if promyq.prices is None:
+        syslog.syslog("ERROR: Failed to get prices")
+        return
 
     retlist = [
         f"# HELP trade_current_value Trade current value in {promyq.home_currency}",
@@ -97,18 +107,13 @@ def get_metrics():
         "# TYPE trade_market_open gauge"
     ]
 
-    if promyq.prices is None:
-        syslog.syslog("ERROR: Failed to get prices")
-        return
-
     for acct in promyq.trades:
         this_acct = promyq.trades[acct]
-        acct_name = this_acct['name'] if "name" in this_acct else acct
         if "stocks" in this_acct:
             for this_trade in this_acct["stocks"]:
                 if "ticker" in this_trade and this_trade[
                         "ticker"] in promyq.prices:
-                    trade_metrics(retlist, acct_name, this_trade)
+                    trade_metrics(retlist, acct, this_trade)
 
     resp = flask.make_response("\n".join(retlist) + "\n", 200)
     return resp
