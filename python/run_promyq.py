@@ -36,8 +36,7 @@ class PromYQ:
 
         self.prices = None
         try:
-            ticker_prices = yahooquery.Ticker(self.tickers)
-            self.prices = ticker_prices.price
+            self.prices = yahooquery.Ticker(self.tickers).price
             return self.prices
         except Exception as exc:
             syslog.syslog(f"ERROR: {exc}")
@@ -102,12 +101,10 @@ def trade_metrics(retlist, acct, this_trade):
 
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
-    promyq.get_prices()
-    if promyq.prices is None:
-        syslog.syslog("ERROR: Failed to get prices")
-        return
+    if promyq.get_prices() is None or promyq.prices is None:
+        return flask.make_response("ERROR: prices array is empty",503)
 
-    retlist = [
+    help_list = [
         f"# HELP trade_current_value Trade current value in {promyq.home_currency}",
         "# TYPE trade_current_value gauge",
         f"# HELP trade_current_profit Trade current profit in {promyq.home_currency}",
@@ -116,14 +113,19 @@ def get_metrics():
         "# TYPE trade_market_open gauge"
     ]
 
+    retlist = []
+
     for acct in promyq.trades:
         this_acct = promyq.trades[acct]
         if "stocks" in this_acct:
             for this_trade in this_acct["stocks"]:
                 trade_metrics(retlist, acct, this_trade)
 
-    resp = flask.make_response("\n".join(retlist) + "\n", 200)
-    return resp
+    if len(retlist) > 0:
+        return flask.make_response("\n".join(help_list + retlist) + "\n", 200)
+    else:
+        print(">>>>",promyq.prices)
+        return flask.make_response("ERROR: Failed to get prices",503)
 
 
 @application.route('/promyq/v1.0/hello', methods=['GET'])
