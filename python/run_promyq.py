@@ -57,6 +57,36 @@ class PromYQ:
 promyq = PromYQ()
 
 
+def ticker_metrics(retlist, this_ticker):
+    if this_ticker not in promyq.prices:
+        return
+
+    this_price = promyq.prices[this_ticker]
+    if "regularMarketPrice" not in this_price:
+        return
+
+    infill_dict = {"ticker": this_ticker}
+    if "longName" in this_price:
+        infill_dict["name"] = this_price["longName"]
+
+    if "tags" in promyq.trades and this_ticker in promyq.trades["tags"]:
+        infill_dict.update(promyq.trades["tags"][this_ticker])
+
+    infill = "{" + ",".join(
+        [f"{idx}:\"{val}\"" for idx, val in infill_dict.items()]) + "} "
+
+    if "regularMarketChange" in this_price:
+        retlist.append(f"ticker_day_move{infill}" + format(
+            this_price["regularMarketChange"], f".{promyq.decimal_places}f"))
+
+    retlist.append(
+        f"ticker_price{infill}" +
+        format(this_price["regularMarketPrice"], f".{promyq.decimal_places}f"))
+
+    retlist.append(f"ticker_market_open{infill}" +
+                   ("1" if this_price['marketState'] == "REGULAR" else "0"))
+
+
 def trade_metrics(retlist, acct, this_trade):
     if "ticker" not in this_trade:
         return
@@ -102,7 +132,7 @@ def trade_metrics(retlist, acct, this_trade):
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
     if promyq.get_prices() is None or promyq.prices is None:
-        return flask.make_response("ERROR: prices array is empty",503)
+        return flask.make_response("ERROR: prices array is empty", 503)
 
     help_list = [
         f"# HELP trade_current_value Trade current value in {promyq.home_currency}",
@@ -110,22 +140,32 @@ def get_metrics():
         f"# HELP trade_current_profit Trade current profit in {promyq.home_currency}",
         "# TYPE trade_current_profit gauge",
         "# HELP trade_market_open Is the market for this trade open",
-        "# TYPE trade_market_open gauge"
+        "# TYPE trade_market_open gauge",
+        "# HELP ticker_market_open Is the market for this ticker open",
+        "# TYPE ticker_market_open gauge",
+        "# HELP ticker_price Current market price for this ticker",
+        "# TYPE ticker_price gauge"
     ]
 
-    retlist = []
-
+    trades_list = []
     for acct in promyq.trades:
         this_acct = promyq.trades[acct]
         if "stocks" in this_acct:
             for this_trade in this_acct["stocks"]:
-                trade_metrics(retlist, acct, this_trade)
+                trade_metrics(trades_list, acct, this_trade)
 
-    if len(retlist) > 0:
-        return flask.make_response("\n".join(help_list + retlist) + "\n", 200)
-    else:
-        print(">>>>",promyq.prices)
-        return flask.make_response("ERROR: Failed to get prices",503)
+    if len(trades_list) <= 0:
+        return flask.make_response("ERROR: Failed to get trade metrics", 503)
+
+    ticker_list = []
+    for this_ticker in promyq.tickers:
+        ticker_metrics(ticker_list, this_ticker)
+
+    if len(ticker_list) <= 0:
+        return flask.make_response("ERROR: Failed to get ticker metrics", 503)
+
+    return flask.make_response(
+        "\n".join(help_list + trades_list + ticker_list) + "\n", 200)
 
 
 @application.route('/promyq/v1.0/hello', methods=['GET'])

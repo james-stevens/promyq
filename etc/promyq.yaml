@@ -1,5 +1,9 @@
 home_currency: USD
 
+tags:
+  TSLA:
+    sector: auto
+
 hl_sipp:
   name: "HL SIPP"
 
