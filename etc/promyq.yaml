@@ -1,4 +1,6 @@
-home_currency: USD
+currency:
+  ticker: GBP
+  places: 2
 
 tags:
   TSLA:
@@ -12,12 +14,18 @@ hl_sipp:
       price: 240.00
       quantity: 234
       date_bought: 2022-11-11 11:11
-      exchange_rate: 1
+      exchange_rate: 1.28
       total_cost: 56170
 
     - ticker: QQQ
       price: 480.00
       quantity: 375
       date_bought: 2022-10-10 10:10
-      exchange_rate: 1
+      exchange_rate: 1.23
       total_cost: 180010
+
+    - ticker: GAW.L
+      price: 99.99
+      quantity: 77
+      date_bought: 2022-12-12 12:12
+      total_cost: 7699.23

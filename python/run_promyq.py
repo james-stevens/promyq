@@ -18,22 +18,30 @@ class PromYQ:
         self.trades = None
         self.tickers = None
         self.prices = None
-        self.home_currency = None
-        self.decimal_places = None
+        self.rates = None
+        self.home_currency = "USD"
+        self.decimal_places = 2
 
     def load_file(self):
         with open("/usr/local/etc/promyq.yaml") as fd:
             self.trades = yaml.load(fd.read(), Loader=yaml.FullLoader)
 
-        self.home_currency = self.trades[
-            "home_currency"] if "home_currency" in self.trades else "USD"
-        self.decimal_places = self.trades[
-            "places"] if "places" in self.trades else 2
+        if "currency" in self.trades:
+            cur = self.trades["currency"]
+            if "places" in cur:
+                self.decimal_places = cur["places"]
+            if "ticker" in cur:
+                self.home_currency = cur["ticker"]
 
     def get_prices(self):
         self.load_file()
         self.get_all_tickers()
+        ret = self.get_all_prices()
+        self.get_all_currencies()
+        print(self.rates)
+        return ret
 
+    def get_all_prices(self):
         self.prices = None
         try:
             self.prices = yahooquery.Ticker(self.tickers).price
@@ -53,6 +61,24 @@ class PromYQ:
                         all_tickers[this_trade["ticker"]] = True
         self.tickers = list(all_tickers)
 
+    def get_all_currencies(self):
+        p_dict = {
+            self.prices[p]["currency"]: True
+            for p in self.prices if "currency" in self.prices[p]
+        }
+        currencies = [
+            self.home_currency + p.upper() + "=X" for p in p_dict
+            if p.upper() != self.home_currency
+        ]
+        self.rates = None
+        try:
+            self.rates = yahooquery.Ticker(currencies).price
+            return self.rates
+        except Exception as exc:
+            syslog.syslog(f"ERROR: {exc}")
+            return None
+        return None
+
 
 promyq = PromYQ()
 
@@ -65,10 +91,19 @@ def ticker_metrics(retlist, this_ticker):
     if "regularMarketPrice" not in this_price:
         return
 
+    if "currency" in this_price and this_price[
+            "currency"] == "GBp" and this_price["regularMarketPrice"] > 5:
+        for item in ["regularMarketPrice", "regularMarketChange"]:
+            this_price[item] = this_price[item] / 100
+        this_price["currency"] = "GBP"
+
     infill_dict = {"ticker": this_ticker}
     if "longName" in this_price:
         infill_dict["name"] = this_price["longName"]
+    if "currency" in this_price:
+        infill_dict["currency"] = this_price["currency"]
 
+    # user applied tags
     if "tags" in promyq.trades and this_ticker in promyq.trades["tags"]:
         infill_dict.update(promyq.trades["tags"][this_ticker])
 
@@ -87,7 +122,7 @@ def ticker_metrics(retlist, this_ticker):
                    ("1" if this_price['marketState'] == "REGULAR" else "0"))
 
 
-def trade_metrics(retlist, acct, this_trade):
+def trade_metrics(promyq, retlist, acct, this_trade):
     if "ticker" not in this_trade:
         return
 
@@ -108,8 +143,11 @@ def trade_metrics(retlist, acct, this_trade):
     infill_dict = {
         "account": acct_name,
         "ticker": this_ticker,
+        "currency": promyq.home_currency,
         "when": this_trade['date_bought']
     }
+
+    # user applied tags
     if "tags" in this_acct:
         infill_dict.update(this_acct["tags"])
     if "tags" in this_trade:
@@ -147,22 +185,22 @@ def get_metrics():
         "# TYPE ticker_price gauge"
     ]
 
-    trades_list = []
-    for acct in promyq.trades:
-        this_acct = promyq.trades[acct]
-        if "stocks" in this_acct:
-            for this_trade in this_acct["stocks"]:
-                trade_metrics(trades_list, acct, this_trade)
-
-    if len(trades_list) <= 0:
-        return flask.make_response("ERROR: Failed to get trade metrics", 503)
-
     ticker_list = []
     for this_ticker in promyq.tickers:
         ticker_metrics(ticker_list, this_ticker)
 
     if len(ticker_list) <= 0:
         return flask.make_response("ERROR: Failed to get ticker metrics", 503)
+
+    trades_list = []
+    for acct in promyq.trades:
+        this_acct = promyq.trades[acct]
+        if "stocks" in this_acct:
+            for this_trade in this_acct["stocks"]:
+                trade_metrics(promyq, trades_list, acct, this_trade)
+
+    if len(trades_list) <= 0:
+        return flask.make_response("ERROR: Failed to get trade metrics", 503)
 
     return flask.make_response(
         "\n".join(help_list + trades_list + ticker_list) + "\n", 200)
