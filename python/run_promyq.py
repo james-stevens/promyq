@@ -8,7 +8,6 @@ import syslog
 
 import promyq
 
-
 application = flask.Flask("PromYQ")
 my_promyq = promyq.PromYQ()
 

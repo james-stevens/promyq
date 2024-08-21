@@ -74,7 +74,6 @@ class PromYQ:
             return False
         return False
 
-
     def ticker_metrics(self, retlist, this_ticker):
         if this_ticker not in self.prices:
             return
@@ -106,13 +105,11 @@ class PromYQ:
             retlist.append(f"ticker_day_move{infill}" + format(
                 this_price["regularMarketChange"], f".{self.decimal_places}f"))
 
-        retlist.append(
-            f"ticker_price{infill}" +
-            format(this_price["regularMarketPrice"], f".{self.decimal_places}f"))
+        retlist.append(f"ticker_price{infill}" + format(
+            this_price["regularMarketPrice"], f".{self.decimal_places}f"))
 
-        retlist.append(f"ticker_market_open{infill}" +
-                       ("1" if this_price['marketState'] == "REGULAR" else "0"))
-
+        retlist.append(f"ticker_market_open{infill}" + (
+            "1" if this_price['marketState'] == "REGULAR" else "0"))
 
     def trade_metrics(self, retlist, acct, this_trade):
         if "ticker" not in this_trade:
@@ -130,7 +127,8 @@ class PromYQ:
             syslog.syslog(f"ERROR: regularMarketPrice not in - {this_price}")
             return
 
-        current_value = this_price["regularMarketPrice"] * this_trade["quantity"]
+        current_value = this_price["regularMarketPrice"] * this_trade[
+            "quantity"]
 
         infill_dict = {
             "account": acct_name,
@@ -150,8 +148,8 @@ class PromYQ:
         infill = "{" + ",".join(
             [f"{idx}:\"{val}\"" for idx, val in infill_dict.items()]) + "} "
 
-        retlist.append(f"trade_market_open{infill}" +
-                       ("1" if this_price['marketState'] == "REGULAR" else "0"))
+        retlist.append(f"trade_market_open{infill}" + (
+            "1" if this_price['marketState'] == "REGULAR" else "0"))
         retlist.append(f"trade_current_value{infill}" +
                        format(current_value, f".{self.decimal_places}f"))
         retlist.append(f"trade_current_profit{infill}" +
@@ -188,14 +186,13 @@ class PromYQ:
         return ticker_list
 
 
-
 # for debugging only
 if __name__ == "__main__":
     my_promyq = PromYQ()
     print(my_promyq.get_prices())
     print("=============")
-    print(json.dumps(my_promyq.trades_list_all(),indent=2))
+    print(json.dumps(my_promyq.trades_list_all(), indent=2))
     print("=============")
-    print(json.dumps(my_promyq.tickers_list_all(),indent=2))
+    print(json.dumps(my_promyq.tickers_list_all(), indent=2))
     print("=============")
-    print(json.dumps(my_promyq.rates,indent=2))
+    print(json.dumps(my_promyq.rates, indent=2))
