@@ -3,7 +3,9 @@
 # Alternative license arrangements possible, contact me for more information
 """ module to run the rest/api for user's site web/ui """
 
+import argparse
 import syslog
+import sys
 import yaml
 import json
 import yahooquery
@@ -188,11 +190,27 @@ class PromYQ:
 
 # for debugging only
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='PromYQ Run')
+    parser.add_argument("-D", '--debug', action="store_true")
+    args = parser.parse_args()
+
     my_promyq = PromYQ()
-    print(my_promyq.get_prices())
-    print("=============")
-    print(json.dumps(my_promyq.trades_list_all(), indent=2))
-    print("=============")
-    print(json.dumps(my_promyq.tickers_list_all(), indent=2))
-    print("=============")
-    print(json.dumps(my_promyq.rates, indent=2))
+    if not my_promyq.get_prices():
+        print("ERROR: geT_prices failed")
+        sys.exit(1)
+
+    help_list = my_promyq.get_help_list()
+    ticker_list = my_promyq.tickers_list_all()
+    trades_list = my_promyq.trades_list_all()
+
+    if args.debug:
+        print("=============")
+        print(json.dumps(trades_list, indent=2))
+        print("=============")
+        print(json.dumps(ticker_list, indent=2))
+        print("=============")
+        print(json.dumps(my_promyq.rates, indent=2))
+    else:
+        print("\n".join(help_list + trades_list + ticker_list))
+
+    sys.exit(0)

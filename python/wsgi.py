@@ -3,7 +3,7 @@
 # Alternative license arrangements possible, contact me for more information
 """ entry point for running web/ui rest/api - called by start-yp shell scr """
 
-from run_promyq import application
+from flask_promyq import application
 
 if __name__ == "__main__":
     application.run()

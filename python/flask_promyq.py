@@ -9,12 +9,12 @@ import syslog
 import promyq
 
 application = flask.Flask("PromYQ")
-my_promyq = promyq.PromYQ()
 
 
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
-    if my_promyq.get_prices() is None or my_promyq.prices is None:
+    my_promyq = promyq.PromYQ()
+    if not my_promyq.get_prices() or my_promyq.prices is None:
         return flask.make_response("ERROR: prices array is empty", 503)
 
     help_list = my_promyq.get_help_list()
