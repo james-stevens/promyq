@@ -33,6 +33,16 @@ class PromYQ:
             if "ticker" in cur:
                 self.home_currency = cur["ticker"]
 
+    def home_price(self, price, currency):
+        if currency == self.home_currency:
+            return price, currency
+        forex = self.home_currency + currency + "=X"
+        if forex not in self.rates or "regularMarketPrice" not in self.rates[
+                forex]:
+            return price, currency
+        return price / self.rates[forex][
+            "regularMarketPrice"], self.home_currency
+
     def get_prices(self):
         self.load_file()
         self.get_all_tickers()
@@ -60,12 +70,12 @@ class PromYQ:
 
     def get_all_currencies(self):
         p_dict = {
-            self.prices[p]["currency"]: True
+            self.prices[p]["currency"].upper(): True
             for p in self.prices if "currency" in self.prices[p]
         }
         currencies = [
-            self.home_currency + p.upper() + "=X" for p in p_dict
-            if p.upper() != self.home_currency
+            self.home_currency + p + "=X" for p in p_dict
+            if p != self.home_currency
         ]
         self.rates = None
         try:
@@ -129,13 +139,14 @@ class PromYQ:
             syslog.syslog(f"ERROR: regularMarketPrice not in - {this_price}")
             return
 
-        current_value = this_price["regularMarketPrice"] * this_trade[
-            "quantity"]
+        this_value, this_currency = self.home_price(
+            this_price["regularMarketPrice"] * this_trade["quantity"],
+            this_price["currency"])
 
         infill_dict = {
             "account": acct_name,
             "ticker": this_ticker,
-            "currency": self.home_currency,
+            "currency": this_currency,
             "when": this_trade['date_bought']
         }
 
@@ -153,10 +164,9 @@ class PromYQ:
         retlist.append(f"trade_market_open{infill}" + (
             "1" if this_price['marketState'] == "REGULAR" else "0"))
         retlist.append(f"trade_current_value{infill}" +
-                       format(current_value, f".{self.decimal_places}f"))
-        retlist.append(f"trade_current_profit{infill}" +
-                       format(current_value - this_trade["total_cost"],
-                              f".{self.decimal_places}f"))
+                       format(this_value, f".{self.decimal_places}f"))
+        retlist.append(f"trade_current_profit{infill}" + format(
+            this_value - this_trade["total_cost"], f".{self.decimal_places}f"))
 
     def get_help_list(self):
         return [
