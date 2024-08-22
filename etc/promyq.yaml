@@ -29,3 +29,9 @@ hl_sipp:
       quantity: 77
       date_bought: 2022-12-12 12:12
       total_cost: 7699.23
+
+    - ticker: BTC-USD
+      price: 50000
+      quantity: 0.125
+      date_bought: 2022-13-13 13:13
+      total_cost: 6250
