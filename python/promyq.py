@@ -34,6 +34,10 @@ class PromYQ:
                 self.home_currency = cur["ticker"]
 
     def home_price(self, price, currency):
+        if currency == "GBp":
+        	currency = "GBP"
+        	price = price / 100
+
         if currency == self.home_currency:
             return price, currency
         forex = self.home_currency + currency + "=X"
@@ -93,12 +97,6 @@ class PromYQ:
         this_price = self.prices[this_ticker]
         if "regularMarketPrice" not in this_price:
             return
-
-        if "currency" in this_price and this_price[
-                "currency"] == "GBp" and this_price["regularMarketPrice"] > 5:
-            for item in ["regularMarketPrice", "regularMarketChange"]:
-                this_price[item] = this_price[item] / 100
-            this_price["currency"] = "GBP"
 
         infill_dict = {"ticker": this_ticker}
         if "longName" in this_price:
@@ -201,25 +199,20 @@ class PromYQ:
 # for debugging only
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PromYQ Run')
-    parser.add_argument("-D", '--debug', action="store_true")
+    parser.add_argument("-j", '--json', action="store_true")
     args = parser.parse_args()
 
     my_promyq = PromYQ()
-    if not my_promyq.get_prices():
-        print("ERROR: geT_prices failed")
+    if not my_promyq.get_prices() or len(my_promyq.prices) <= 0:
+        print("ERROR: get_prices() failed")
         sys.exit(1)
 
     help_list = my_promyq.get_help_list()
     ticker_list = my_promyq.tickers_list_all()
     trades_list = my_promyq.trades_list_all()
 
-    if args.debug:
-        print("=============")
-        print(json.dumps(trades_list, indent=2))
-        print("=============")
-        print(json.dumps(ticker_list, indent=2))
-        print("=============")
-        print(json.dumps(my_promyq.rates, indent=2))
+    if args.json:
+        print(json.dumps({"trades":my_promyq.trades,"prices":my_promyq.prices,"forex":my_promyq.rates}, indent=2))
     else:
         print("\n".join(help_list + trades_list + ticker_list))
 

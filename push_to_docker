@@ -1,0 +1,16 @@
+#! /bin/sh
+
+ver="$(date +%Y-%m-%d)"
+if test "$1"; then ver="$1"; shift; fi
+if test "$1"; then imgs="$*"; else imgs="$(cat list)"; fi
+
+for img in ${imgs}
+do
+	id=$(docker image ls | awk '{ if ($1=="'"${img}"'") print $3 }')
+
+	docker tag ${id} jamesstevens/${img}
+	docker push jamesstevens/${img}
+
+	docker tag ${id} jamesstevens/${img}:${ver}
+	docker push jamesstevens/${img}:${ver}
+done
