@@ -12,7 +12,6 @@ import yahooquery
 
 
 class PromYQ:
-
     def __init__(self):
         self.filename = "/usr/local/etc/promyq.yaml"
         self.trades = None
@@ -28,24 +27,25 @@ class PromYQ:
 
         if "currency" in self.trades:
             cur = self.trades["currency"]
-            if "places" in cur:
+            if "places" in cur and isinstance(cur["places"], int):
                 self.decimal_places = cur["places"]
             if "ticker" in cur:
                 self.home_currency = cur["ticker"]
 
     def home_price(self, price, currency):
+        # "GBp": price in pence, "GBP": price in pounds
+        # when we do currency conversions we need it in pounds
         if currency == "GBp":
-        	currency = "GBP"
-        	price = price / 100
+            currency = "GBP"
+            price = price / 100
 
         if currency == self.home_currency:
             return price, currency
+
         forex = self.home_currency + currency + "=X"
-        if forex not in self.rates or "regularMarketPrice" not in self.rates[
-                forex]:
+        if forex not in self.rates or "regularMarketPrice" not in self.rates[forex]:
             return price, currency
-        return price / self.rates[forex][
-            "regularMarketPrice"], self.home_currency
+        return price / self.rates[forex]["regularMarketPrice"], self.home_currency
 
     def get_prices(self):
         self.load_file()
@@ -73,14 +73,8 @@ class PromYQ:
         self.tickers = list(all_tickers)
 
     def get_all_currencies(self):
-        p_dict = {
-            self.prices[p]["currency"].upper(): True
-            for p in self.prices if "currency" in self.prices[p]
-        }
-        currencies = [
-            self.home_currency + p + "=X" for p in p_dict
-            if p != self.home_currency
-        ]
+        p_dict = {self.prices[p]["currency"].upper(): True for p in self.prices if "currency" in self.prices[p]}
+        currencies = [self.home_currency + p + "=X" for p in p_dict if p != self.home_currency]
         self.rates = None
         try:
             self.rates = yahooquery.Ticker(currencies).price
@@ -108,18 +102,14 @@ class PromYQ:
         if "tags" in self.trades and this_ticker in self.trades["tags"]:
             infill_dict.update(self.trades["tags"][this_ticker])
 
-        infill = "{" + ",".join(
-            [f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
+        infill = "{" + ",".join([f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
 
         if "regularMarketChange" in this_price:
-            retlist.append(f"ticker_day_move{infill}" + format(
-                this_price["regularMarketChange"], f".{self.decimal_places}f"))
+            retlist.append(f"ticker_day_move{infill}" +
+                           format(this_price["regularMarketChange"], f".{self.decimal_places}f"))
 
-        retlist.append(f"ticker_price{infill}" + format(
-            this_price["regularMarketPrice"], f".{self.decimal_places}f"))
-
-        retlist.append(f"ticker_market_open{infill}" + (
-            "1" if this_price['marketState'] == "REGULAR" else "0"))
+        retlist.append(f"ticker_price{infill}" + format(this_price["regularMarketPrice"], f".{self.decimal_places}f"))
+        retlist.append(f"ticker_market_open{infill}" + ("1" if this_price['marketState'] == "REGULAR" else "0"))
 
     def trade_metrics(self, retlist, acct, this_trade):
         if "ticker" not in this_trade:
@@ -137,9 +127,8 @@ class PromYQ:
             syslog.syslog(f"ERROR: regularMarketPrice not in - {this_price}")
             return
 
-        this_value, this_currency = self.home_price(
-            this_price["regularMarketPrice"] * this_trade["quantity"],
-            this_price["currency"])
+        this_value, this_currency = self.home_price(this_price["regularMarketPrice"] * this_trade["quantity"],
+                                                    this_price["currency"])
 
         infill_dict = {
             "account": acct_name,
@@ -156,27 +145,24 @@ class PromYQ:
         if "tags" in self.trades and this_ticker in self.trades["tags"]:
             infill_dict.update(self.trades["tags"][this_ticker])
 
-        infill = "{" + ",".join(
-            [f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
+        infill = "{" + ",".join([f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
 
-        retlist.append(f"trade_market_open{infill}" + (
-            "1" if this_price['marketState'] == "REGULAR" else "0"))
-        retlist.append(f"trade_current_value{infill}" +
-                       format(this_value, f".{self.decimal_places}f"))
-        retlist.append(f"trade_current_profit{infill}" + format(
-            this_value - this_trade["total_cost"], f".{self.decimal_places}f"))
+        retlist.append(f"trade_market_open{infill}" + ("1" if this_price['marketState'] == "REGULAR" else "0"))
+
+        retlist.append(f"trade_current_value{infill}" + format(this_value, f".{self.decimal_places}f"))
+
+        if "total_cost" in this_trade:
+            retlist.append(f"trade_current_profit{infill}" +
+                           format(this_value - this_trade["total_cost"], f".{self.decimal_places}f"))
 
     def get_help_list(self):
         return [
             f"# HELP trade_current_value Trade current value in {self.home_currency}",
             "# TYPE trade_current_value gauge",
             f"# HELP trade_current_profit Trade current profit in {self.home_currency}",
-            "# TYPE trade_current_profit gauge",
-            "# HELP trade_market_open Is the market for this trade open",
-            "# TYPE trade_market_open gauge",
-            "# HELP ticker_market_open Is the market for this ticker open",
-            "# TYPE ticker_market_open gauge",
-            "# HELP ticker_price Current market price for this ticker",
+            "# TYPE trade_current_profit gauge", "# HELP trade_market_open Is the market for this trade open",
+            "# TYPE trade_market_open gauge", "# HELP ticker_market_open Is the market for this ticker open",
+            "# TYPE ticker_market_open gauge", "# HELP ticker_price Current market price for this ticker",
             "# TYPE ticker_price gauge"
         ]
 
@@ -212,7 +198,7 @@ if __name__ == "__main__":
     trades_list = my_promyq.trades_list_all()
 
     if args.json:
-        print(json.dumps({"trades":my_promyq.trades,"prices":my_promyq.prices,"forex":my_promyq.rates}, indent=2))
+        print(json.dumps({"trades": my_promyq.trades, "prices": my_promyq.prices, "forex": my_promyq.rates}, indent=2))
     else:
         print("\n".join(help_list + trades_list + ticker_list))
 

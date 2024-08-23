@@ -13,9 +13,10 @@ application = flask.Flask("PromYQ")
 
 @application.route('/version', methods=['GET'])
 def get_version():
-	with open("/etc/version") as fd:
-		return flask.make_response(fd.readline(),200)
-	return flask.make_response("ERROR: Failed to open version file", 503)
+    with open("/etc/version") as fd:
+        return flask.make_response(fd.readline(), 200)
+    return flask.make_response("ERROR: Failed to open version file", 503)
+
 
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
@@ -33,8 +34,7 @@ def get_metrics():
     if len(trades_list) <= 0:
         return flask.make_response("ERROR: Failed to get trade metrics", 503)
 
-    return flask.make_response(
-        "\n".join(help_list + trades_list + ticker_list) + "\n", 200)
+    return flask.make_response("\n".join(help_list + trades_list + ticker_list) + "\n", 200)
 
 
 @application.route('/promyq/v1.0/hello', methods=['GET'])
