@@ -164,7 +164,7 @@
         {
 		  "datasource":"Prometheus",
           "editorMode": "code",
-          "expr": "sum by (account)(trade_current_value_gbp)",
+          "expr": "sum by (account)(trade_current_value)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -172,7 +172,7 @@
         {
 		  "datasource":"Prometheus",
           "editorMode": "code",
-          "expr": "sum(trade_current_value_gbp)",
+          "expr": "sum(trade_current_value)",
           "hide": false,
           "legendFormat": "TOTAL",
           "range": true,

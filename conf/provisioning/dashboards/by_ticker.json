@@ -165,7 +165,7 @@
 		  "datasource": "Prometheus",
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (ticker)(trade_current_value_gbp)",
+          "expr": "sum by (ticker)(trade_current_value)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -173,7 +173,7 @@
         {
 		  "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "sum(trade_current_value_gbp)",
+          "expr": "sum(trade_current_value)",
           "hide": false,
           "legendFormat": "TOTAL",
           "range": true,
@@ -191,7 +191,7 @@
     "list": []
   },
   "time": {
-    "from": "now-120d",
+    "from": "now-10d",
     "to": "now"
   },
   "timepicker": {

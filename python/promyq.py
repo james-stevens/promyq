@@ -109,7 +109,7 @@ class PromYQ:
             infill_dict.update(self.trades["tags"][this_ticker])
 
         infill = "{" + ",".join(
-            [f"{idx}:\"{val}\"" for idx, val in infill_dict.items()]) + "} "
+            [f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
 
         if "regularMarketChange" in this_price:
             retlist.append(f"ticker_day_move{infill}" + format(
@@ -157,7 +157,7 @@ class PromYQ:
             infill_dict.update(self.trades["tags"][this_ticker])
 
         infill = "{" + ",".join(
-            [f"{idx}:\"{val}\"" for idx, val in infill_dict.items()]) + "} "
+            [f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
 
         retlist.append(f"trade_market_open{infill}" + (
             "1" if this_price['marketState'] == "REGULAR" else "0"))
