@@ -11,6 +11,12 @@ import promyq
 application = flask.Flask("PromYQ")
 
 
+@application.route('/version', methods=['GET'])
+def get_version():
+	with open("/etc/version") as fd:
+		return flask.make_response(fd.readline(),200)
+	return flask.make_response("ERROR: Failed to open version file", 503)
+
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
     my_promyq = promyq.PromYQ()

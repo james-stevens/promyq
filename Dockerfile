@@ -37,4 +37,6 @@ COPY python /usr/local/python/
 RUN python3 -m compileall /opt/pyrar/python/
 
 COPY inittab /etc/inittab
+
+COPY version /etc/
 CMD [ "/sbin/init" ]

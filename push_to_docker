@@ -1,6 +1,6 @@
 #! /bin/sh
 
-ver="$(date +%Y-%m-%d)"
+ver="$(cat version)"
 if test "$1"; then ver="$1"; shift; fi
 if test "$1"; then imgs="$*"; else imgs="$(cat list)"; fi
 
