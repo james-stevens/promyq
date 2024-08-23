@@ -32,6 +32,18 @@ class PromYQ:
             if "ticker" in cur:
                 self.home_currency = cur["ticker"]
 
+    def all_data_ok(self):
+        # check we have all the data we wanted
+        if self.prices is None or self.rates is None or len(self.prices) <= 0 or len(self.rates) <= 0:
+            return False
+        for ticker in self.tickers:
+            if ticker not in self.prices or "regularMarketPrice" not in self.prices[ticker]:
+                return False
+        for cur in self.forex:
+            if cur not in self.rates or "regularMarketPrice" not in self.rates[cur]:
+                return False
+        return True
+
     def home_price(self, price, currency):
         # "GBp": price in pence, "GBP": price in pounds
         # when we do currency conversions we need it in pounds
@@ -44,7 +56,7 @@ class PromYQ:
 
         forex = self.home_currency + currency + "=X"
         if forex not in self.rates or "regularMarketPrice" not in self.rates[forex]:
-            return price, currency
+            return None, None
         return price / self.rates[forex]["regularMarketPrice"], self.home_currency
 
     def get_prices(self):
@@ -74,10 +86,10 @@ class PromYQ:
 
     def get_all_currencies(self):
         p_dict = {self.prices[p]["currency"].upper(): True for p in self.prices if "currency" in self.prices[p]}
-        currencies = [self.home_currency + p + "=X" for p in p_dict if p != self.home_currency]
+        self.forex = [self.home_currency + p + "=X" for p in p_dict if p != self.home_currency]
         self.rates = None
         try:
-            self.rates = yahooquery.Ticker(currencies).price
+            self.rates = yahooquery.Ticker(self.forex).price
             return True
         except Exception as exc:
             syslog.syslog(f"ERROR: {exc}")
@@ -129,6 +141,11 @@ class PromYQ:
 
         this_value, this_currency = self.home_price(this_price["regularMarketPrice"] * this_trade["quantity"],
                                                     this_price["currency"])
+
+        # currency convertion failed, prob
+        if this_value is None or this_currency is None:
+            syslog.syslog(f"ERROR: currency conversion for {this_price['ticker']} failed")
+            return
 
         infill_dict = {
             "account": acct_name,
@@ -191,6 +208,9 @@ if __name__ == "__main__":
     my_promyq = PromYQ()
     if not my_promyq.get_prices() or len(my_promyq.prices) <= 0:
         print("ERROR: get_prices() failed")
+        sys.exit(1)
+    if not my_promyq.all_data_ok():
+        print("ERROR: all_data_ok() failed")
         sys.exit(1)
 
     help_list = my_promyq.get_help_list()

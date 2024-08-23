@@ -24,6 +24,9 @@ def get_metrics():
     if not my_promyq.get_prices() or my_promyq.prices is None:
         return flask.make_response("ERROR: prices array is empty", 503)
 
+    if not my_promyq.all_data_ok():
+        return flask.make_response("ERROR: Failed to pass all_data_ok()", 503)
+
     help_list = my_promyq.get_help_list()
 
     ticker_list = my_promyq.tickers_list_all()
