@@ -60,13 +60,13 @@ The `date_bought` field will be added as a tag to every trade metric so trades o
 
 A minimum file might look like this
 
-	account_name:
-		name: "Account Description"
-		stocks:
-		  - ticker: TSLA
-			date_bought: 2024-01-01 01:01:01
-			quantity: 27
-			total_cost: 1234.67
+    account_name:
+      name: "Account Description"
+      stocks:
+        - ticker: TSLA
+          date_bought: 2024-01-01 01:01:01
+          quantity: 27
+          total_cost: 1234.67
 
 This defines an account called `account_name` which holds a single trade in `TSLA` stock.
 
@@ -85,9 +85,9 @@ You can add your own tags to each account, trade or by ticker using the property
 
 `tags` at the global level is for adding tags to all trades or spot prices for the same ticker. For example, this YAML at the global level will add the tag `sector=”automotive”` to every spot price or trade metric for Tesla stock.
 
-	tags:
-		TSLA:
-			sector: automotive
+    tags:
+      TSLA:
+        sector: automotive
 
 By adding a `sector` tag to all your stocks, you could then graph total value by sector of your portfolio.
 
@@ -125,16 +125,16 @@ These are the Prometheus metrics it will generate
 
 ### For each Trade
 
-		# HELP trade_current_value Trade current value in <home-currency>
-		# TYPE trade_current_value gauge
-		# HELP trade_current_profit Trade current profit in <home-currency>
-		# TYPE trade_current_profit gauge
-		# HELP trade_market_open Is the market for this trade open
-		# TYPE trade_market_open gauge
+        # HELP trade_current_value Trade current value in <home-currency>
+        # TYPE trade_current_value gauge
+        # HELP trade_current_profit Trade current profit in <home-currency>
+        # TYPE trade_current_profit gauge
+        # HELP trade_market_open Is the market for this trade open
+        # TYPE trade_market_open gauge
 
 ### For Each Ticker
 
-		# HELP ticker_market_open Is the market for this ticker open
-		# TYPE ticker_market_open gauge
-		# HELP ticker_price Current market price for this ticker
-		# TYPE ticker_price gauge
+        # HELP ticker_market_open Is the market for this ticker open
+        # TYPE ticker_market_open gauge
+        # HELP ticker_price Current market price for this ticker
+        # TYPE ticker_price gauge
