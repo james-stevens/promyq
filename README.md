@@ -1,6 +1,6 @@
 # PromYQ - An Asset Portfolio Tracker
 
-PromYQ is a container for tracking the value of a collection of asset portfolios. It gets the prices using YahooQuery, so can price anything tracked by Yahoo Finance, this includes most global stocks (equities),
+PromYQ is a container for tracking the value of a collection of asset portfolios. It gets the prices using [YahooQuery](https://github.com/dpguthrie/yahooquery), so can price anything tracked by Yahoo Finance, this includes most global stocks (equities),
  a range of the major crypto currencies and various stores of wealth like precious metals.
 
 If your home currency does not match the currency the asset is priced in, it will pull a live
@@ -14,16 +14,18 @@ Apart from the list of trades you wish to track, there are really only two thing
 
 A demo portfolio configuration file and two demo Grafana dashboards are included in the container.
 
+You can build the container yourself by running the wrapper script `./dkmk` or you can pull it from `docker.com` as `jamesstevens/promyq`.
+
 
 ## Supported Environment Variables
 
 | Env Var | Default | Meaning
 |---------|--------|----------|
-| PROMYQ_REFRESH_INTERVAL | 5 mins | How often Prometheus will poll for the current price
-| PROMYQ_RETENTION_TIME | 180 days | How long Prometheus will retain historic data
-| PROMYQ_FACILITY | local1 | Syslog “facility” to log to
-| PROMYQ_SEVERITY | info | Syslog “severity” to log with
-| SYSLOG_SERVER | Console | IP Address to syslog to
+| `PROMYQ_REFRESH_INTERVAL` | 5 mins | How often Prometheus will poll for the current price
+| `PROMYQ_RETENTION_TIME` | 180 days | How long Prometheus will retain historic data
+| `PROMYQ_FACILITY` | local1 | Syslog `facility` to log to
+| `PROMYQ_SEVERITY` | info | Syslog `severity` to log with
+| `SYSLOG_SERVER` | Console | IP Address to syslog to
 
 By default the container will log to the "console" / "standard output", but if you wish to log to a syslog server, you can do this by setting the environment variable `SYSLOG_SERVER` to the IP Address of your syslog server.
 
