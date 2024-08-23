@@ -18,6 +18,8 @@ A demo portfolio configuration file and two demo Grafana dashboards are included
 
 You can build the container yourself by running the wrapper script `./dkmk` or you can pull it from `docker.com` as `jamesstevens/promyq`.
 
+If you just run the container with no set-up, it should work and give you two demo dashboards that reflect the demo stock portfolio.
+
 
 ## Supported Environment Variables
 
@@ -32,6 +34,8 @@ You can build the container yourself by running the wrapper script `./dkmk` or y
 By default the container will log to the "console" / "standard output", but if you wish to log to a syslog server, you can do this by setting the environment variable `SYSLOG_SERVER` to the IP Address of your syslog server.
 
 The format of the refresh interval & retention time supports the units: y, w, d, h, m, s, ms - e.g. `5m` or `180d`.
+
+Prometheus may not do the first data poll until the refresh interval has expired for the first time.
 
 
 ## Data Storage
