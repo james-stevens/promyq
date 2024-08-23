@@ -1,7 +1,9 @@
 # PromYQ - An Asset Portfolio Tracker
 
-PromYQ is a container for tracking the value of a collection of asset portfolios. It gets the prices using [YahooQuery](https://github.com/dpguthrie/yahooquery), so can price anything tracked by Yahoo Finance, this includes most global stocks (equities),
- a range of the major crypto currencies and various stores of wealth like precious metals.
+PromYQ is a container for tracking the value of a collection of asset portfolios.
+
+It gets the prices using [YahooQuery](https://github.com/dpguthrie/yahooquery), so can price anything tracked by Yahoo Finance, this includes most global stocks (equities),
+a range of the major crypto currencies and various stores of wealth like precious metals.
 
 If your home currency does not match the currency the asset is priced in, it will pull a live
 exchange rate and calculate the currency value in your configured home currency.
