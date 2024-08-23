@@ -6,4 +6,4 @@ chown -R grafana: /opt/data/grafana
 exec /usr/sbin/grafana-server \
 	--pidfile=/run/grafana.pid \
 	--homepath=/usr/share/grafana \
-	2>&1 | exec logger -t grafana
+	2>&1 | exec logger -t grafana -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}

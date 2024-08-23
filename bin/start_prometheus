@@ -10,4 +10,5 @@ awk '{
 exec /usr/bin/prometheus \
 	--storage.tsdb.path=/opt/data/prometheus \
 	--storage.tsdb.retention.time=${PROMYQ_RETENTION_TIME:-180d} \
-	--config.file="/run/prometheus.yml" 2>&1 | exec logger -t prometheus
+	--config.file="/run/prometheus.yml" 2>&1 \
+	| exec logger -t prometheus -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}

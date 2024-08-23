@@ -4,4 +4,4 @@
 
 cd /usr/local/python
 exec gunicorn --threads 3 --bind unix:/run/promyq.sock wsgi 2>&1 \
-	| exec logger -t promyq -p local0.info
+	| exec logger -t promyq -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}
