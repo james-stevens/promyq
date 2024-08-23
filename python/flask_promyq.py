@@ -40,7 +40,7 @@ def get_metrics():
     return flask.make_response("\n".join(help_list + trades_list + ticker_list) + "\n", 200)
 
 
-@application.route('/promyq/v1.0/hello', methods=['GET'])
+@application.route('/', methods=['GET'])
 def get_hello():
     resp = flask.make_response(flask.jsonify({"hello": "world"}), 200)
     return resp
