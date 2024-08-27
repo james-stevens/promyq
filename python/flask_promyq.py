@@ -37,6 +37,7 @@ def get_metrics():
     if len(trades_list) <= 0:
         return flask.make_response("ERROR: Failed to get trade metrics", 503)
 
+    my_promyq.end_service()
     return flask.make_response("\n".join(help_list + trades_list + ticker_list) + "\n", 200)
 
 

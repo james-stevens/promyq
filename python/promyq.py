@@ -31,8 +31,11 @@ class PromYQ:
         self.decimal_places = 2
 
     def end_service(self):
-        if not self.cache_save_required:
+        if not self.cache_save_required or self.forex_want is None:
             return
+        data = {"forex": [p[3:6] for p in self.forex_want]}
+        with open(self.cache_filename, "w") as fd:
+            yaml.dump(data, fd, default_flow_style=False)
 
     def load_file(self):
         with open(self.trades_filename) as fd:
@@ -45,13 +48,14 @@ class PromYQ:
             if "ticker" in cur:
                 self.home_currency = cur["ticker"]
 
-        if not os.path.isfile(self.cache_filename) or os.path.getmtime(self.trades_filename) > os.path.getmtime(self.cache_filename):
+        if not os.path.isfile(self.cache_filename) or os.path.getmtime(self.trades_filename) > os.path.getmtime(
+                self.cache_filename):
             self.cache_save_required = True
         else:
             with open(self.cache_filename) as fd:
                 this_cache = yaml.load(fd.read(), Loader=yaml.FullLoader)
             if "forex" in this_cache:
-                self.forex_want = [ self.forex_ticker(p) for p in this_cache["forex"] ]
+                self.forex_want = [self.forex_ticker(p) for p in this_cache["forex"]]
 
     def forex_ticker(self, currency):
         return self.home_currency + currency + "=X"
@@ -115,10 +119,13 @@ class PromYQ:
 
     def get_all_currencies(self):
         if self.forex_want is not None:
-            self.forex_got = { p:self.prices_got[p] for p in self.prices_got if is_forex(p) }
+            self.forex_got = {p: self.prices_got[p] for p in self.prices_got if is_forex(p)}
             return True
 
-        p_dict = {self.prices_got[p]["currency"].upper(): True for p in self.prices_got if "currency" in self.prices_got[p]}
+        p_dict = {
+            self.prices_got[p]["currency"].upper(): True
+            for p in self.prices_got if "currency" in self.prices_got[p]
+        }
         self.forex_want = [self.forex_ticker(p) for p in p_dict if p != self.home_currency]
         self.forex_got = None
         try:
