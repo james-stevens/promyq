@@ -11,18 +11,26 @@ import json
 import yahooquery
 
 
+def is_forex(ticker):
+    return ticker[-2:] == "=X"
+
+
 class PromYQ:
     def __init__(self):
-        self.filename = "/usr/local/etc/promyq.yaml"
+        self.trades_filename = "/opt/data/etc/promyq.yaml"
+        self.cache_filename = "/opt/data/etc/promyq_cache.yaml"
+        self.cache_save_required = False
+        self.cache = {}
         self.trades = None
-        self.tickers = None
-        self.prices = None
-        self.rates = None
+        self.prices_want = None
+        self.prices_got = None
+        self.forex_want = [ "GBPUSD=X" ]
+        self.forex_got = None
         self.home_currency = "USD"
         self.decimal_places = 2
 
     def load_file(self):
-        with open("/usr/local/etc/promyq.yaml") as fd:
+        with open(self.trades_filename) as fd:
             self.trades = yaml.load(fd.read(), Loader=yaml.FullLoader)
 
         if "currency" in self.trades:
@@ -32,15 +40,18 @@ class PromYQ:
             if "ticker" in cur:
                 self.home_currency = cur["ticker"]
 
+    def forex_ticker(self, currency):
+        return self.home_currency + currency + "=X"
+
     def all_data_ok(self):
         # check we have all the data we wanted
-        if self.prices is None or self.rates is None or len(self.prices) <= 0 or len(self.rates) <= 0:
+        if self.prices_got is None or self.forex_got is None or len(self.prices_got) <= 0 or len(self.forex_got) <= 0:
             return False
-        for ticker in self.tickers:
-            if ticker not in self.prices or "regularMarketPrice" not in self.prices[ticker]:
+        for ticker in self.prices_want:
+            if ticker not in self.prices_got or "regularMarketPrice" not in self.prices_got[ticker]:
                 return False
-        for cur in self.forex:
-            if cur not in self.rates or "regularMarketPrice" not in self.rates[cur]:
+        for cur in self.forex_want:
+            if cur not in self.forex_got or "regularMarketPrice" not in self.forex_got[cur]:
                 return False
         return True
 
@@ -54,10 +65,10 @@ class PromYQ:
         if currency == self.home_currency:
             return price, currency
 
-        forex = self.home_currency + currency + "=X"
-        if forex not in self.rates or "regularMarketPrice" not in self.rates[forex]:
+        forex = self.forex_ticker(currency)
+        if forex not in self.forex_got or "regularMarketPrice" not in self.forex_got[forex]:
             return None, None
-        return price / self.rates[forex]["regularMarketPrice"], self.home_currency
+        return price / self.forex_got[forex]["regularMarketPrice"], self.home_currency
 
     def get_prices(self):
         self.load_file()
@@ -65,9 +76,9 @@ class PromYQ:
         return self.get_all_prices() and self.get_all_currencies()
 
     def get_all_prices(self):
-        self.prices = None
+        self.prices_got = None
         try:
-            self.prices = yahooquery.Ticker(self.tickers).price
+            self.prices_got = yahooquery.Ticker(self.prices_want).price
             return True
         except Exception as exc:
             syslog.syslog(f"ERROR: {exc}")
@@ -75,21 +86,30 @@ class PromYQ:
         return False
 
     def get_all_tickers(self):
-        self.tickers = None
+        self.prices_want = None
         all_tickers = {}
         for acct in self.trades:
             if "stocks" in self.trades[acct]:
                 for this_trade in self.trades[acct]["stocks"]:
                     if "ticker" in this_trade:
                         all_tickers[this_trade["ticker"]] = True
-        self.tickers = list(all_tickers)
+
+        if self.forex_want is not None:
+            for p in self.forex_want:
+                all_tickers[p] = True
+
+        self.prices_want = list(all_tickers)
 
     def get_all_currencies(self):
-        p_dict = {self.prices[p]["currency"].upper(): True for p in self.prices if "currency" in self.prices[p]}
-        self.forex = [self.home_currency + p + "=X" for p in p_dict if p != self.home_currency]
-        self.rates = None
+        if self.forex_want is not None:
+            self.forex_got = { p:self.prices_got[p] for p in self.prices_got if is_forex(p) }
+            return True
+
+        p_dict = {self.prices_got[p]["currency"].upper(): True for p in self.prices_got if "currency" in self.prices_got[p]}
+        self.forex_want = [self.forex_ticker(p) for p in p_dict if p != self.home_currency]
+        self.forex_got = None
         try:
-            self.rates = yahooquery.Ticker(self.forex).price
+            self.forex_got = yahooquery.Ticker(self.forex_want).price
             return True
         except Exception as exc:
             syslog.syslog(f"ERROR: {exc}")
@@ -97,10 +117,10 @@ class PromYQ:
         return False
 
     def ticker_metrics(self, retlist, this_ticker):
-        if this_ticker not in self.prices:
+        if this_ticker not in self.prices_got or is_forex(this_ticker):
             return
 
-        this_price = self.prices[this_ticker]
+        this_price = self.prices_got[this_ticker]
         if "regularMarketPrice" not in this_price:
             return
 
@@ -128,10 +148,10 @@ class PromYQ:
             return
 
         this_ticker = this_trade["ticker"]
-        if this_ticker not in self.prices:
+        if this_ticker not in self.prices_got:
             return
 
-        this_price = self.prices[this_ticker]
+        this_price = self.prices_got[this_ticker]
         this_acct = self.trades[acct]
         acct_name = this_acct['name'] if "name" in this_acct else acct
 
@@ -194,7 +214,7 @@ class PromYQ:
 
     def tickers_list_all(self):
         ticker_list = []
-        for this_ticker in self.tickers:
+        for this_ticker in self.prices_want:
             self.ticker_metrics(ticker_list, this_ticker)
         return ticker_list
 
@@ -206,7 +226,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     my_promyq = PromYQ()
-    if not my_promyq.get_prices() or len(my_promyq.prices) <= 0:
+    if not my_promyq.get_prices() or len(my_promyq.prices_got) <= 0:
         print("ERROR: get_prices() failed")
         sys.exit(1)
     if not my_promyq.all_data_ok():

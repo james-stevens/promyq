@@ -21,8 +21,8 @@ def get_version():
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
     my_promyq = promyq.PromYQ()
-    if not my_promyq.get_prices() or my_promyq.prices is None:
-        return flask.make_response("ERROR: prices array is empty", 503)
+    if not my_promyq.get_prices():
+        return flask.make_response("ERROR: get prices failed 503")
 
     if not my_promyq.all_data_ok():
         return flask.make_response("ERROR: Failed to pass all_data_ok()", 503)
