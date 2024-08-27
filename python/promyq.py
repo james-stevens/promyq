@@ -6,6 +6,7 @@
 import argparse
 import syslog
 import sys
+import os
 import yaml
 import json
 import yahooquery
@@ -24,10 +25,14 @@ class PromYQ:
         self.trades = None
         self.prices_want = None
         self.prices_got = None
-        self.forex_want = [ "GBPUSD=X" ]
+        self.forex_want = None
         self.forex_got = None
         self.home_currency = "USD"
         self.decimal_places = 2
+
+    def end_service(self):
+        if not self.cache_save_required:
+            return
 
     def load_file(self):
         with open(self.trades_filename) as fd:
@@ -39,6 +44,14 @@ class PromYQ:
                 self.decimal_places = cur["places"]
             if "ticker" in cur:
                 self.home_currency = cur["ticker"]
+
+        if not os.path.isfile(self.cache_filename) or os.path.getmtime(self.trades_filename) > os.path.getmtime(self.cache_filename):
+            self.cache_save_required = True
+        else:
+            with open(self.cache_filename) as fd:
+                this_cache = yaml.load(fd.read(), Loader=yaml.FullLoader)
+            if "forex" in this_cache:
+                self.forex_want = [ self.forex_ticker(p) for p in this_cache["forex"] ]
 
     def forex_ticker(self, currency):
         return self.home_currency + currency + "=X"
@@ -242,4 +255,5 @@ if __name__ == "__main__":
     else:
         print("\n".join(help_list + trades_list + ticker_list))
 
+    my_promyq.end_service()
     sys.exit(0)
