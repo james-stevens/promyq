@@ -39,7 +39,7 @@ class PromYQ:
         self.get_all_tickers()
         if not self.get_all_prices():
             raise PromyqError("ERROR: Failed to load ticker prices")
-        if not self.get_all_currencies():
+        if not self.get_all_forex():
             raise PromyqError("ERROR: Failed to load currency forex")
         if not self.all_data_ok():
             raise PromyqError("ERROR: Data failed sanity check")
@@ -85,11 +85,18 @@ class PromYQ:
 
     def all_data_ok(self):
         # check we have all the data we wanted
-        if self.prices_got is None or self.forex_got is None or len(self.prices_got) <= 0 or len(self.forex_got) <= 0:
+        if self.prices_got is None or len(self.prices_got) < len(self.prices_want):
             return False
+
         for ticker in self.prices_want:
             if ticker not in self.prices_got or "regularMarketPrice" not in self.prices_got[ticker]:
                 return False
+
+        if self.forex_want is None or len(self.forex_want) == 0:
+            return True
+        if self.forex_got is None or len(self.forex_got) < len(self.forex_want):
+            return False
+
         for cur in self.forex_want:
             if cur not in self.forex_got or "regularMarketPrice" not in self.forex_got[cur]:
                 return False
@@ -116,6 +123,7 @@ class PromYQ:
             self.prices_got = yahooquery.Ticker(self.prices_want).price
             return True
         except Exception as exc:
+            syslog.syslog(str(exc))
             raise PromyqError("ERROR: Yahoo query failed to fetch prices")
         return False
 
@@ -134,8 +142,8 @@ class PromYQ:
 
         self.prices_want = list(all_tickers)
 
-    def get_all_currencies(self):
-        if self.forex_want is not None:
+    def get_all_forex(self):
+        if self.forex_want is not None and not self.cache_save_required:
             self.forex_got = {p: self.prices_got[p] for p in self.prices_got if is_forex(p)}
             return True
 
@@ -143,12 +151,18 @@ class PromYQ:
             self.prices_got[p]["currency"].upper(): True
             for p in self.prices_got if "currency" in self.prices_got[p]
         }
+
         self.forex_want = [self.forex_ticker(p) for p in p_dict if p != self.home_currency]
+        if len(self.forex_want) <= 0:
+            self.forex_got = {}
+            return True
+
         self.forex_got = None
         try:
             self.forex_got = yahooquery.Ticker(self.forex_want).price
             return True
         except Exception as exc:
+            syslog.syslog(str(exc))
             raise PromyqError("ERROR: Yahoo query failed to fetch forex")
         return False
 
