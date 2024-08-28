@@ -21,24 +21,11 @@ def get_version():
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
     my_promyq = promyq.PromYQ()
-    if not my_promyq.get_prices():
-        return flask.make_response("ERROR: get prices failed 503")
-
-    if not my_promyq.all_data_ok():
-        return flask.make_response("ERROR: Failed to pass all_data_ok()", 503)
-
-    help_list = my_promyq.get_help_list()
-
-    ticker_list = my_promyq.tickers_list_all()
-    if len(ticker_list) <= 0:
-        return flask.make_response("ERROR: Failed to get ticker metrics", 503)
-
-    trades_list = my_promyq.trades_list_all()
-    if len(trades_list) <= 0:
-        return flask.make_response("ERROR: Failed to get trade metrics", 503)
-
-    my_promyq.end_service()
-    return flask.make_response("\n".join(help_list + trades_list + ticker_list) + "\n", 200)
+    try:
+        prom_metrics = my_promyq.prometheus_metrics()
+        return flask.make_response("\n".join(prom_metrics) + "\n", 200)
+    except promyq.PromyqError as e:
+        return flask.make_response(f"{str(e)}", 503)
 
 
 @application.route('/', methods=['GET'])

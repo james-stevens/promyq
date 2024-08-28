@@ -12,6 +12,10 @@ import json
 import yahooquery
 
 
+class PromyqError(Exception):
+    pass
+
+
 def is_forex(ticker):
     return ticker[-2:] == "=X"
 
@@ -29,6 +33,25 @@ class PromYQ:
         self.forex_got = None
         self.home_currency = "USD"
         self.decimal_places = 2
+
+    def prometheus_metrics(self):
+        self.load_file()
+        self.get_all_tickers()
+        if not self.get_all_prices():
+            raise PromyqError("ERROR: Failed to load ticker prices")
+        if not self.get_all_currencies():
+            raise PromyqError("ERROR: Failed to load currency forex")
+        if not self.all_data_ok():
+            raise PromyqError("ERROR: Data failed sanity check")
+
+        ticker_list = self.tickers_list_all()
+        if len(ticker_list) < len(self.prices_want):
+            raise PromyqError("ERROR: Too few ticker metrics")
+        trades_list = self.trades_list_all()
+        if len(trades_list) < len(self.trades):
+            raise PromyqError("ERROR: Too few trades metrics")
+        self.end_service()
+        return self.get_help_list() + trades_list + ticker_list
 
     def end_service(self):
         if not self.cache_save_required or self.forex_want is None:
@@ -86,11 +109,6 @@ class PromYQ:
         if forex not in self.forex_got or "regularMarketPrice" not in self.forex_got[forex]:
             return None, None
         return price / self.forex_got[forex]["regularMarketPrice"], self.home_currency
-
-    def get_prices(self):
-        self.load_file()
-        self.get_all_tickers()
-        return self.get_all_prices() and self.get_all_currencies()
 
     def get_all_prices(self):
         self.prices_got = None
@@ -246,21 +264,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     my_promyq = PromYQ()
-    if not my_promyq.get_prices() or len(my_promyq.prices_got) <= 0:
-        print("ERROR: get_prices() failed")
-        sys.exit(1)
-    if not my_promyq.all_data_ok():
-        print("ERROR: all_data_ok() failed")
-        sys.exit(1)
+    try:
+        prom_metrics = my_promyq.prometheus_metrics()
+        if args.json:
+            print(
+                json.dumps({
+                    "trades": my_promyq.trades,
+                    "prices": my_promyq.prices_got,
+                    "forex": my_promyq.forex_got
+                },
+                           indent=2))
+        else:
+            print("\n".join(prom_metrics))
+    except PromyqError as e:
+        print(f"{str(e)}")
 
-    help_list = my_promyq.get_help_list()
-    ticker_list = my_promyq.tickers_list_all()
-    trades_list = my_promyq.trades_list_all()
-
-    if args.json:
-        print(json.dumps({"trades": my_promyq.trades, "prices": my_promyq.prices, "forex": my_promyq.rates}, indent=2))
-    else:
-        print("\n".join(help_list + trades_list + ticker_list))
-
-    my_promyq.end_service()
     sys.exit(0)
