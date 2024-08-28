@@ -116,8 +116,7 @@ class PromYQ:
             self.prices_got = yahooquery.Ticker(self.prices_want).price
             return True
         except Exception as exc:
-            syslog.syslog(f"ERROR: {exc}")
-            return False
+            raise PromyqError("ERROR: Yahoo query failed to fetch prices")
         return False
 
     def get_all_tickers(self):
@@ -150,8 +149,7 @@ class PromYQ:
             self.forex_got = yahooquery.Ticker(self.forex_want).price
             return True
         except Exception as exc:
-            syslog.syslog(f"ERROR: {exc}")
-            return False
+            raise PromyqError("ERROR: Yahoo query failed to fetch forex")
         return False
 
     def ticker_metrics(self, retlist, this_ticker):
