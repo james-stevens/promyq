@@ -4,7 +4,6 @@
 """ module to run the rest/api for user's site web/ui """
 
 import flask
-import syslog
 
 import promyq
 
