@@ -39,5 +39,4 @@ def main():
 
 
 if __name__ == "__main__":
-    syslog.syslog("RUNNING WEB/UI")
     main()

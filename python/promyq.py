@@ -11,6 +11,8 @@ import yaml
 import json
 import yahooquery
 
+import log
+
 
 class PromyqError(Exception):
     pass
@@ -33,8 +35,19 @@ class PromYQ:
         self.forex_got = None
         self.home_currency = "USD"
         self.decimal_places = 2
+        self.log_facility = syslog.LOG_LOCAL1
+        self.log_severity = syslog.LOG_INFO
+
+    def set_logging(self):
+        if "PROMYQ_FACILITY" in os.environ and os.environ["PROMYQ_FACILITY"] in log.facility_options:
+            self.log_facility = log.facility_options[os.environ["PROMYQ_FACILITY"]]
+            syslog.openlog(logoption=syslog.LOG_PID, facility=self.log_facility)
+
+        if "PROMYQ_SEVERITY" in os.environ and os.environ["PROMYQ_SEVERITY"] in log.severity_options:
+            self.log_severity = log.severity_options[os.environ["PROMYQ_SEVERITY"]]
 
     def prometheus_metrics(self):
+        self.set_logging()
         self.load_file()
         self.get_all_tickers()
         if not self.get_all_prices():
@@ -123,7 +136,7 @@ class PromYQ:
             self.prices_got = yahooquery.Ticker(self.prices_want).price
             return True
         except Exception as exc:
-            syslog.syslog(str(exc))
+            syslog.syslog(self.log_severity, str(exc))
             raise PromyqError("ERROR: Yahoo query failed to fetch prices")
         return False
 
@@ -162,7 +175,7 @@ class PromYQ:
             self.forex_got = yahooquery.Ticker(self.forex_want).price
             return True
         except Exception as exc:
-            syslog.syslog(str(exc))
+            syslog.syslog(self.log_severity, str(exc))
             raise PromyqError("ERROR: Yahoo query failed to fetch forex")
         return False
 
@@ -206,7 +219,7 @@ class PromYQ:
         acct_name = this_acct['name'] if "name" in this_acct else acct
 
         if "regularMarketPrice" not in this_price:
-            syslog.syslog(f"ERROR: regularMarketPrice not in - {this_price}")
+            syslog.syslog(self.log_severity, f"ERROR: regularMarketPrice not in - {this_price}")
             return
 
         this_value, this_currency = self.home_price(this_price["regularMarketPrice"] * this_trade["quantity"],
@@ -214,7 +227,7 @@ class PromYQ:
 
         # currency convertion failed, prob
         if this_value is None or this_currency is None:
-            syslog.syslog(f"ERROR: currency conversion for {this_price['ticker']} failed")
+            syslog.syslog(self.log_severity, f"ERROR: currency conversion for {this_price['ticker']} failed")
             return
 
         infill_dict = {
