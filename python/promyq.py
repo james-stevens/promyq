@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-# (c) Copyright 2019-2022, James Stevens ... see LICENSE for details
+# (c) Copyright 2019-2024, James Stevens ... see LICENSE for details
 # Alternative license arrangements possible, contact me for more information
 """ module to run the rest/api for user's site web/ui """
 

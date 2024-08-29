@@ -1,9 +1,10 @@
 #! /usr/bin/python3
-# (c) Copyright 2019-2022, James Stevens ... see LICENSE for details
+# (c) Copyright 2019-2024, James Stevens ... see LICENSE for details
 # Alternative license arrangements possible, contact me for more information
-""" functions for sys-logging """
 
 import syslog
+
+# there's prob a better way to do this, but I couldn't find it !!
 
 facility_options = {
     "kern": syslog.LOG_KERN,
@@ -37,6 +38,7 @@ severity_options = {
     "err": syslog.LOG_ERR,
     "error": syslog.LOG_ERR,
     "warning": syslog.LOG_WARNING,
+    "warn": syslog.LOG_WARNING,
     "notice": syslog.LOG_NOTICE,
     "info": syslog.LOG_INFO,
     "information": syslog.LOG_INFO,
