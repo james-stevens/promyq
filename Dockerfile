@@ -17,12 +17,11 @@ RUN rmdir /var/lib/nginx/tmp /var/log/nginx
 RUN ln -s /dev/shm /var/lib/nginx/tmp
 RUN ln -s /dev/shm /var/log/nginx
 
+RUN apk add prometheus grafana
+
 RUN mkdir -p /opt/htdocs
 COPY index.html /opt/htdocs/
-
 COPY nginx.conf /etc/nginx/
-
-RUN apk add prometheus grafana
 
 RUN rm -rf /usr/share/grafana/data /usr/share/grafana/plugins
 RUN ln -s /opt/data/grafana/data /usr/share/grafana/data
