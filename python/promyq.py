@@ -233,7 +233,7 @@ class PromYQ:
         }
 
         if "total_cost" in this_trade:
-            infill_dict["total_cost"] = this_trade["total_cost"]
+            infill_dict["total_cost"] = format(this_trade["total_cost"], f".{self.decimal_places}f")
 
         # user applied tags
         if "tags" in this_acct:
