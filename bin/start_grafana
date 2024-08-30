@@ -3,7 +3,7 @@
 mkdir -p /opt/data/grafana/data /opt/data/grafana/plugins
 chown -R grafana: /opt/data/grafana
 
-exec /usr/sbin/grafana-server \
+exec su -s /bin/sh grafana -c "exec /usr/sbin/grafana-server \
 	--pidfile=/run/grafana.pid \
-	--homepath=/usr/share/grafana \
-	2>&1 | exec logger -t grafana -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}
+	--homepath=/usr/share/grafana" 2>&1 \
+	| exec su -s /bin/sh nobody -c "exec logger -t grafana -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}"

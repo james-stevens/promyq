@@ -7,8 +7,12 @@ awk '{
 	print
 	}' /usr/local/etc/prometheus.yml > /run/prometheus.yml
 
-exec /usr/bin/prometheus \
+chown root:prometheus /run/prometheus.yml
+chmod 640 /run/prometheus.yml
+chown -R prometheus: /opt/data/prometheus
+
+exec su -s /bin/sh prometheus -c "exec /usr/bin/prometheus \
 	--storage.tsdb.path=/opt/data/prometheus \
 	--storage.tsdb.retention.time=${PROMYQ_RETENTION_TIME:-180d} \
-	--config.file="/run/prometheus.yml" 2>&1 \
-	| exec logger -t prometheus -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}
+	--config.file=/run/prometheus.yml" 2>&1 \
+	| exec su -s /bin/sh nobody -c "exec logger -t prometheus -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}"

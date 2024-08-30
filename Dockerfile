@@ -19,6 +19,9 @@ RUN ln -s /dev/shm /var/log/nginx
 
 RUN apk add prometheus grafana
 
+RUN addgroup -S promyq
+RUN adduser -S -G promyq promyq
+
 RUN mkdir -p /opt/htdocs
 COPY index.html /opt/htdocs/
 COPY nginx.conf /etc/nginx/
