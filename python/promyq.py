@@ -232,6 +232,9 @@ class PromYQ:
             "when": this_trade['date_bought']
         }
 
+        if "total_cost" in this_trade:
+            infill_dict["total_cost"] = this_trade["total_cost"]
+
         # user applied tags
         if "tags" in this_acct:
             infill_dict.update(this_acct["tags"])
