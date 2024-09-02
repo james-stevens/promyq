@@ -5,5 +5,6 @@ addr="192.168.1.145"
 docker run -it \
 	-e PROMYQ_REFRESH_INTERVAL=20s \
 	-v /opt/promyq:/opt/data \
+	-v /opt/github/promyq/htdocs:/opt/htdocs \
 	-p ${addr}:8080:8080 -p ${addr}:8000:8000 -p ${addr}:9090:9090 -p ${addr}:3000:3000 -p ${addr}:80:80 \
 	$(cat list) $@

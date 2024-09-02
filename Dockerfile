@@ -22,8 +22,6 @@ RUN apk add prometheus grafana
 RUN addgroup -S promyq
 RUN adduser -S -G promyq promyq
 
-RUN mkdir -p /opt/htdocs
-COPY index.html /opt/htdocs/
 COPY nginx.conf /etc/nginx/
 
 RUN rm -rf /usr/share/grafana/data /usr/share/grafana/plugins
@@ -38,6 +36,7 @@ COPY bin /usr/local/bin/
 COPY python /usr/local/python/
 RUN python3 -m compileall /opt/pyrar/python/
 
+COPY htdocs /opt/htdocs/
 COPY inittab /etc/inittab
 
 COPY version /etc/

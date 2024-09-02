@@ -1,0 +1,798 @@
+<!--- (c) Copyright 2019-2020, James Stevens ... see LICENSE for details --->
+<!--- Alternative license arrangements are possible, contact me for more information --->
+<html>
+<head>
+	<script src="/chart.min.js"></script>
+	<script src="/theme.js"></script>
+	<script src="/palette.js"></script>
+</head>
+<style type='text/css'>.msgPop { visibility: hidden;}</style>
+
+
+<script language="Javascript">
+	const debugAPI = false;
+</script>
+
+<script language="Javascript">
+
+console.clear();
+
+var gbl = {
+    page: "&#x1F5CE;",
+    tick: "&#x2611;",
+    cross: "&#x2612;",
+    timer: "&#x23f3;",
+    bin: "&#x2702;",
+    warn: "&#x26a0;",
+
+	theme: "dark"
+	};
+
+changeTheme("dark");
+
+
+// will store the context of what the user is up to which the router will use to go back there
+var ctx = { };
+
+var timers = [];
+
+var col_desc = {
+	"trade_id":null,
+	"when_dt":"When bought",
+	"quantity":"Number of shares",
+	"currency":"Currency",
+	"price":"Price paid",
+	"exchange_rate":"Exchange rate",
+	"total_cost_gbp":"Total cost (GBP)",
+	"account_held":"Holding Account",
+	":rowid:":null
+	};
+
+//=============================================================================================
+// Some library functions
+//=============================================================================================
+
+function callApi(sfx,callback,inData)
+{
+	document.body.style.cursor="progress";
+
+	if (debugAPI) {
+		console.log("API>>>",sfx);
+		console.log("API>>>",inData);
+		}
+
+	// gbl.forms.forEach(i => i.style.display = "none");
+
+	if ((inData != null)&&(inData.method == "PUT"))
+		msg(`Requesting ... ${gbl.timer}`);
+	else
+		msg(`Loading ... ${gbl.timer}`);
+
+	let p = "https";
+	if (!gbl.with_https) p = "http";
+	let url = `${p}://${gbl.server}/api/v1/${sfx}`;
+	if (debugAPI) console.log("API-URL>>>",url);
+
+	let okResp = 200;
+	let httpCmd = { headers: { }, method: 'GET' };
+
+	if (inData != null) {
+		httpCmd.method = inData.method;
+		httpCmd.body = inData.json;
+		httpCmd.headers = {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+			}
+		if ("okResp" in inData) okResp = inData.okResp;
+		}
+	if (debugAPI) console.log("API-HEAD>>>",httpCmd);
+
+	fetch(url,httpCmd).then(response => {
+		if (debugAPI) console.log("API-Resp>>>",response);
+		if (response.status != okResp) {
+			response.text().then(
+				data => {
+					try {
+						e = JSON.parse(data);
+						errMsg(e.error);
+						}
+					catch {
+						errMsg(`ERROR: ${response.status} ${response.statusText}`)
+						}
+					},
+				() => errMsg(`ERROR: ${response.status} ${response.statusText}`)
+				);
+			msg("");
+			if ((inData != null)&&("callErr" in inData)) return callback(null);
+			return;
+			}
+
+		response.text().then(data => {
+			if ((inData != null)&&(inData.noData)) {
+				msg("");
+				callback(true);
+			} else {
+				let param = data;
+				try {
+					param = JSON.parse(data); }
+				catch {
+					param = data; }
+				msg("");
+				callback(param);
+				}
+			});
+
+		})
+		.catch(err => errMsg(`ERROR: Failed to connect to Diamond Hands`))
+
+	document.body.style.cursor="auto";
+}
+
+
+
+function setState(title,state)
+{
+	gbl.state = state;
+	if (!("param" in gbl)) window.history.pushState(state,title,gbl.pathname);
+	document.title = title;
+	delete gbl.param;
+}
+
+
+//=============================================================================================
+// Common functions
+//=============================================================================================
+
+
+function btn(call,txt,hlp,sz) {
+	let ex=""
+	if (sz != null) ex = `style='width: ${sz}px;'`
+	return `<span ${ex} title="${hlp}" class=myBtn onClick="${call}; return false;">${txt}</span>`;
+}
+
+
+function refreshRouter()
+{
+	if ("one_trade" in ctx) showOneTrade()
+	else {
+		displayTrades();
+		repeatUpdate();
+		}
+	topLine();
+}
+
+
+function updatePrices() {
+	delete gbl.trades;
+
+	let trades_qry = { "order": ["currency","ticker","when_dt"], join: ":all:" };
+
+	callApi("query?query=trade_current_value",data => {
+		
+		if (!((data.status)&&(data.status=="success"))) return errMsg("Fetch trades failed");
+
+		gbl.trades = data.data.result;
+
+		let sp_ids = [];
+		for(i in data.trades) {
+			let t = data.trades[i];
+			if (!(sp_ids.includes(t.spot_value_id.spot_price_id)))
+				sp_ids.push(t.spot_value_id.spot_price_id);
+			}
+
+		refreshRouter();
+
+		}, { method: "POST", callErr: true, json: JSON.stringify(trades_qry) });
+}
+
+
+
+function lineGraph(data,title)
+{
+	let my = { data: [], label: [] };
+	for (i in data) {
+		my.data.push(data[i].total);
+		my.label.push(data[i].when_dt);
+		}
+
+	let now = 0
+	for(i in gbl.trades) now += gbl.trades[i].spot_value_id.current_value_gbp;
+	my.data.push(now);
+	my.label.push("Now");
+
+	new Chart(document.getElementById("lineCanvas"), {
+		type: 'line',
+		data: {
+		labels: my.label,
+		datasets: [
+			{
+			label: title,
+			data: my.data,
+			borderColor: "#ff8080"
+			}
+		]
+		},
+		options: {
+			maintainAspectRatio: true,
+			responsive: true,
+			title: {
+				display: true,
+				text: 'Total Value'
+			}
+		}
+	});
+}
+
+
+
+function graphMode(name)
+{
+	cancelTimers();
+	ctx = { graphs: true };
+	topLine();
+	gbl.bot.innerHTML = '<div class="graphDiv"><canvas id="'+name+'" style="background: #ffffff"></canvas></div>';
+}
+
+
+
+function totalGraph()
+{
+    graphMode('lineCanvas')
+	callApi("total_values",data => { lineGraph(data.total_values,"End of Day Value") } );
+}
+
+
+
+function weeklyGraph()
+{
+	graphMode('lineCanvas')
+	callApi("week_values",data => { lineGraph(data.week_values,"Running Weekly Value") } );
+}
+
+
+function pieChart(my)
+{
+	sel = "mpn65";
+	if (my.data.length > 65) sel = "tol-rainbow";
+	cols = []
+	for(i of palette(sel, my.data.length)) cols.push("#"+i);
+
+	new Chart(document.getElementById("pieCanvas"), {
+		type: 'pie',
+		data: {
+		  labels: my.label,
+		  datasets: [{
+			label: "Population (millions)",
+			backgroundColor: cols,
+			data: my.data,
+			borderRadius: 5,
+			hoverOffset: 30,
+			weight: 20,
+			offset: 5,
+		  }]
+		},
+		options: {
+			plugins: {
+				legend: {
+					display: true,
+					position: "right"
+				}
+			},
+		  title: {
+			display: true,
+			text: 'some text'
+		  }
+		}
+	});
+}
+
+
+
+function pieByWeek()
+{
+	graphMode('pieCanvas')
+
+	let my = { data: [], label: [] };
+
+	direction = 0; tot = 0;
+	for(let i in gbl.sums.vals) direction += (gbl.sums.vals[i].value - gbl.sums.vals[i].week);
+	for(let i in gbl.sums.vals) {
+		t = gbl.sums.vals[i];
+		if ((direction > 0)&&(t.value > t.week)) tot += (t.value - t.week);
+		if ((direction < 0)&&(t.value < t.week)) tot += (t.week - t.value);
+		}
+
+	for(let i in gbl.sums.vals) {
+		t = gbl.sums.vals[i];
+		if ((direction > 0)&&(t.value > t.week)) {
+			my.data.push(((t.value-t.week)/tot)*100);
+			my.label.push(t.name);
+			}
+		if ((direction < 0)&&(t.value < t.week)) {
+			my.data.push(((t.week-t.value)/tot)*100);
+			my.label.push(t.name);
+			}
+		}
+
+	pieChart(my)
+}
+
+
+
+function pieByToday()
+{
+	graphMode('pieCanvas')
+
+	let my = { data: [], label: [] };
+
+	direction = 0; tot = 0;
+	for(let i in gbl.sums.vals) direction += (gbl.sums.vals[i].value - gbl.sums.vals[i].day);
+	for(let i in gbl.sums.vals) {
+		t = gbl.sums.vals[i];
+		if ((direction > 0)&&(t.value > t.day)) tot += (t.value - t.day);
+		if ((direction < 0)&&(t.value < t.day)) tot += (t.day - t.value);
+		}
+
+	for(let i in gbl.sums.vals) {
+		t = gbl.sums.vals[i];
+		if ((direction > 0)&&(t.value > t.day)) {
+			my.data.push(((t.value-t.day)/tot)*100);
+			my.label.push(t.name);
+			}
+		if ((direction < 0)&&(t.value < t.day)) {
+			my.data.push(((t.day-t.value)/tot)*100);
+			my.label.push(t.name);
+			}
+		}
+
+	pieChart(my)
+}
+
+
+
+function pieByHolding()
+{
+	graphMode('pieCanvas')
+
+	let my = { data: [], label: [] };
+
+	tot = 0;
+	for(let i in gbl.sums.vals) tot += gbl.sums.vals[i].value;
+
+	for(let i in gbl.sums.vals) {
+		t = gbl.sums.vals[i];
+		my.data.push((t.value/tot)*100);
+		my.label.push(t.name);
+		}
+
+	pieChart(my)
+}
+
+
+
+function pieByCost()
+{
+	graphMode('pieCanvas')
+
+	let my = { data: [], label: [] };
+
+	tot = 0;
+	for(let i in gbl.sums.vals) tot += gbl.sums.vals[i].cost;
+
+	for(let i in gbl.sums.vals) {
+		t = gbl.sums.vals[i];
+		my.data.push((t.cost/tot)*100);
+		my.label.push(t.name);
+		}
+
+	pieChart(my)
+}
+
+
+
+function pieByGain()
+{
+	graphMode('pieCanvas')
+
+	let my = { data: [], label: [] };
+
+	tot = 0;
+	for(let i in gbl.sums.vals) 
+		if (gbl.sums.vals[i].value > gbl.sums.vals[i].cost)
+			tot += (gbl.sums.vals[i].cost - gbl.sums.vals[i].value);
+
+	for(let i in gbl.sums.vals) {
+		t = gbl.sums.vals[i];
+		if (t.cost < t.value) {
+			my.data.push(((t.cost - t.value)/tot)*100);
+			my.label.push(t.name);
+			}
+		}
+
+	pieChart(my)
+}
+
+
+
+function flfmt(val) { return val.toLocaleString(undefined,{ minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+
+
+function valCell(val,def,cmp,sfx)
+{
+    let s = ""
+    if (sfx != null) s = sfx;
+    cls = "none"
+    if (def > cmp) cls = "profit";
+    else if (def < cmp) cls = "loss";
+	return `<td class=${cls}>${flfmt(val)}${s}</td>`;
+}
+
+
+
+function clickRow(ticker)
+{
+	let old = "";
+
+	if (ticker == "Total") return totalGraph();
+
+	if ("block" in gbl) {
+		let x = gbl.block;
+		delete gbl.block
+		if (x == ticker) return;
+		}
+
+	if (ticker in gbl.trades) {
+		ctx.one_trade = ticker;
+		return refreshRouter();
+		}
+
+	if ("openTag" in ctx) {
+		old = ctx.openTag;
+		let x = document.getElementById(`blk_${ctx.openTag}`);
+		if (x) x.style.display = "none";
+		delete ctx.openTag;
+		}
+
+	let x = document.getElementById(`blk_${ticker}`);
+	if ((x)&&(old != ticker)) {
+		x.style.display = "table-row-group";
+		ctx.openTag = ticker;
+		}
+}
+
+
+function blockClicked(ticker)
+{
+	gbl.block = ticker;
+}
+
+
+
+function makeRow(v,obj)
+{
+	let showStyle = "dataRow";
+	if ((obj)&&("sty" in obj)) showStyle = obj.sty;
+
+	if ((v.showPrice)&&(!v.market_open)) showStyle = "dataRowOff";
+
+	let x = `<tr onClick="clickRow('${v.name}');" class=${showStyle}>`;
+	let dca = v.native_cost / v.num;
+
+	if ((obj)&&("tag" in obj)) x += `<td>${obj.tag}</td>`;
+	else {
+		if ((v.showPrice)&&(v.google))
+			x += `<td><a onClick="blockClicked('${v.name}');" href="https://www.google.com/finance/quote/${v.google}" target=_window>${v.name}</a></td>`;
+		else {
+			if (v.name == "GBP")
+				x += `<td><a href="https://www.google.com/finance/quote/GBP-USD" target=_window>${v.name}</a></td>`;
+			else
+				x += `<td>${v.name}</td>`;
+		}
+	}
+
+	x += valCell(v.cost,0,0);
+	x += valCell(v.value,v.value,v.cost);
+	x += valCell(v.value - v.cost,v.value,v.cost);
+	x += valCell(((v.value - v.cost)/v.cost)*100,v.value,v.cost,"%");
+
+	x += valCell((v.total_day_gain/v.cost)*100,v.value,v.cost,"%");
+
+	if (v.showPrice)
+		x += `<td class=none>${flfmt(dca)}</td>`;
+	else x += "<td></td>";
+	x += "<td>&nbsp;</td>"
+
+	x += valCell(v.value - v.week,v.value,v.week);
+	x += "<td>&nbsp;</td>"
+
+	if (v.showPrice) {
+		x += valCell(v.price,v.price,v.day_price)
+		x += valCell(v.price - v.day_price,v.price,v.day_price)
+		}
+	else x += "<td colspan=2></td>";
+
+	x += valCell(v.value - v.day,v.value,v.day);
+	x += valCell(((v.value - v.day)/v.day)*100,v.value,v.day,"%");
+
+	return x+"</tr>";
+}
+
+
+function numDays(dt) { return new Date(dt).getTime() / 1000 / 86400; }
+
+
+
+function showOneTrade()
+{
+	let this_trade = gbl.trades[ctx.one_trade];
+	x = "<table align=center>"
+	for(t in this_trade)
+		if ((!(typeof(this_trade[t]) == "object"))&&(col_desc[t] != null))
+			x = x + `<tr class=dataRow><td class=formPrompt>${col_desc[t]} : </td><td>${this_trade[t]}</td></tr>`;
+	x = x + "</table>"
+	gbl.bot.innerHTML = x;
+}
+
+
+
+function summaryItem(items,name,t,showPrice,singleTrade)
+{
+	let value = parseFloat(t.__value__[1]);
+
+	if (!(name in items)) {
+		items[name] = {
+			name: name,
+			week_price: 0,
+			day_price: 0,
+			price: 0,
+			total_day_gain:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
+			single_trade: singleTrade,
+			market_open: false,
+			showPrice: showPrice,
+			google: t.ticker,
+			currency: t.currency
+			};
+		}
+
+	let itm = items[name];
+
+	let now = Math.round(t.__value__[0] / 86400);
+	let buy = numDays(t.when);
+
+	itm.count++;
+	itm.num += t.quantity;
+	itm.native_cost += (t.price * t.quantity);
+	itm.cost += t.total_cost;
+	itm.value += value,
+	itm.week += value,
+	itm.day += value,
+	itm.total_day_gain += ((value - t.total_cost) / (now - buy)) * 365.25;
+}
+
+
+
+function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></td></tr>`; }
+
+
+
+function displayTrades()
+{
+	topLine();
+
+	delete gbl.sums;
+	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
+	for(let i in gbl.trades) {
+		let t = gbl.trades[i].metric;
+		let v = gbl.trades[i].value;
+		t.__value__ = v;
+		summaryItem(gbl.sums.vals,t.ticker,t,true,false);
+		summaryItem(gbl.sums.accts,t.account,t,false,false);
+		summaryItem(gbl.sums.curr,t.currency,t,false,false);
+		summaryItem(gbl.sums.total,"Total",t,false,false);
+		summaryItem(gbl.sums.ones,i,t,true,true);
+		}
+
+	multiCur = (Object.keys(gbl.sums.curr).length > 1);
+
+	let x = "<table align=center border=0 cellspacing=1 cellpadding=1><tr>";
+	x += "<colgroup><col width=150></colgroup>"
+	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>Wgt %</th><th>DCA</th>"
+	x += "<th></th><th>Week +/-</th><th></th><th>Price</th><th>+/-</th><th colspan=2>Day +/-</th>"
+	x += "</tr>"
+
+	cur = gbl.trades[0].currency;
+	for(let i in gbl.sums.vals) {
+		if ((multiCur)&&(gbl.sums.vals[i].currency != cur)) {
+			if (cur in gbl.sums.curr)
+				x += makeRow(gbl.sums.curr[cur],{"sty":"summaryRow"}) + spaceRow(3);
+			cur = gbl.sums.vals[i].currency;
+			}
+		x += makeRow(gbl.sums.vals[i]);
+
+		sty = "none";
+		if (("openTag" in ctx)&&(ctx.openTag == i)) sty = "table-row-group";
+
+		x += `<tbody style="display: ${sty};" id="blk_${i}">`;
+		for(let tr in gbl.trades) {
+			let t = gbl.trades[tr].metric;
+			if (t.ticker == i)
+				x += makeRow(gbl.sums.ones[tr],
+					{
+					"sty": "subRow",
+					"tag": t.when.substr(0,16)
+					}
+				);
+			}
+		x += "</tbody>";
+		}
+
+	if (multiCur)
+		x += makeRow(gbl.sums.curr[cur],{"sty":"summaryRow"}) + spaceRow(3);
+
+	x += spaceRow(5);
+
+	sorted_accts = Object.entries(gbl.sums.accts).sort((a, b) => a[0].localeCompare(b[0]));
+
+	for(let i in sorted_accts)
+		x += makeRow(gbl.sums.accts[sorted_accts[i][0]]);
+
+	for(let i in gbl.sums.total)
+		x += makeRow(gbl.sums.total[i],{"sty":"summaryRow"});
+
+	x += "</table>";
+	gbl.bot.innerHTML = x;
+
+}
+
+
+
+function cancelTimers()
+{
+let id=0;
+
+	while(id = timers.pop()) clearTimeout(id);
+}
+
+
+
+function repeatUpdate()
+{
+	cancelTimers();
+	timers.push(setTimeout(updatePrices,60000));
+}
+
+
+
+
+function startUp()
+{
+	gbl.pathname = window.location.pathname;
+	gbl.with_https = (window.location.protocol == "https:");
+	gbl.server = window.location.host;
+
+	gbl.bot = document.getElementById("lowerSpan");
+	gbl.top = document.getElementById("topSpan");
+
+	updatePrices();
+}
+
+
+
+
+
+function unerrMsg()
+{
+	let m = document.getElementById("myMsgPop");
+	let t1 = m.innerHTML;
+	let t2 = gbl.lastErrMsg;
+	if (t2 == null) t2 = "";
+	if (t1 == t2) m.className = "msgPop msgPopNo";
+	delete gbl.lastErrMsg;
+}
+
+
+
+function errMsg(txt)
+{
+	let m = document.getElementById("myMsgPop");
+	m.className = 'msgPop msgPopYes';
+	m.innerHTML = `${gbl.warn} ${txt}`;
+	gbl.lastErrMsg = m.innerHTML;
+	msg("");
+	setTimeout(unerrMsg,2500);
+}
+
+
+
+function unpopMsg()
+{
+	let m = document.getElementById("showMsg");
+	let t1 = m.innerHTML;
+	let t2 = gbl.lastMsg;
+	if (t2 == null) t2 = "";
+	if (t1 == t2) m.className = "fadeout";
+	delete gbl.lastMsg;
+}
+
+
+
+function popMsg(txt)
+{
+	msg(txt,"fadein");
+	gbl.lastMsg = document.getElementById("showMsg").innerHTML;
+	setTimeout(unpopMsg,2500);
+}
+
+
+
+function msg(myMsg,newClass)
+{
+	let m = document.getElementById("showMsg");
+	if (!m) m = document.getElementById("lowerMsg");
+	if (!m) return;
+
+	if (newClass == null) newClass = "fullvis";
+	m.className = newClass;
+	m.innerHTML = myMsg;
+	delete gbl.lastMsg;
+}
+
+
+function backToPrices()
+{
+	ctx = {}
+	updatePrices();
+}
+
+
+function topLine()
+{
+    let y = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td width=1 class=dataRow>"
+        + `<font size=+1><a title='Open this page in a new window' target=_blank href='${window.origin}${gbl.pathname}?`;
+
+    let x = `'>${gbl.page}</a></font></td><td>` + btn("backToPrices()",gbl.server,"Reload Data");
+
+    if ("one_trade" in ctx)
+		x += btn("showOneTrade()",gbl.trades[ctx.one_trade].ticker.ticker + "/" + ctx.one_trade,"This Trade");
+
+    x += "</td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
+    x += "<td><div id='showBatch'></div></td>";
+
+	x += "<td>" 
+		+ btn("pieByWeek()","Week","Show Pie of changes this week")
+		+ btn("pieByToday()","Today","Show Pie of changes today")
+		+ btn("pieByHolding()","Balance","Show Pie by Current Value")
+		+ btn("pieByGain()","Gain","Show pie by Gain")
+		+ btn("pieByCost()","Cost","Show pie by Cost")
+		+ btn("weeklyGraph()","7-Day","Show weekly graph")
+		+ btn("totalGraph()","All Time","Show total graph")
+		+ "</td>"
+
+    x += "</tr><table><hr>";
+
+    gbl.top.innerHTML = y + btoa(JSON.stringify(gbl.state)) + x;
+}
+
+
+//=============================================================================================
+</script>
+
+
+
+<head>
+	<title>Diamond Hands</title>
+</head>
+<body onLoad="startUp();">
+
+<div id="topSpan">
+<table border=0 cellspacing=0 cellpadding=0 width=100%>
+<tr><td><h1 style="text-align:center">Diamond Hands</h1></td></tr>
+</table>
+</div>
+
+<div style="height: 100px;">&nbsp;</div>
+<div id="lowerSpan"></div>
+
+<div><table><tr><td><div onClick="unerrMsg();" id=myMsgPop class='msgPop msgPopNo'></div></td></tr></table></div>
+</body></html>
