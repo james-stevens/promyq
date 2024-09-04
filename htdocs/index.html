@@ -43,7 +43,7 @@ var col_desc = {
 	"currency":"Currency",
 	"price":"Price paid",
 	"exchange_rate":"Exchange rate",
-	"total_cost_gbp":"Total cost (GBP)",
+	"total_cost":"Total cost (GBP)",
 	"account_held":"Holding Account",
 	":rowid:":null
 	};
@@ -123,7 +123,7 @@ function callApi(sfx,callback,inData)
 			});
 
 		})
-		.catch(err => errMsg(`ERROR: Failed to connect to Diamond Hands`))
+		.catch(err => errMsg(`ERROR: Failed to connect to Prometheus`))
 
 	document.body.style.cursor="auto";
 }
@@ -538,14 +538,13 @@ function showOneTrade()
 
 function summaryItem(items,name,t,showPrice,singleTrade)
 {
-	let value = parseFloat(t.__value__[1]);
-
 	if (!(name in items)) {
 		items[name] = {
 			name: name,
 			week_price: 0,
 			day_price: 0,
 			price: 0,
+			cost: 0,
 			total_day_gain:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
 			single_trade: singleTrade,
 			market_open: false,
@@ -564,10 +563,10 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 	itm.num += t.quantity;
 	itm.native_cost += (t.price * t.quantity);
 	itm.cost += t.total_cost;
-	itm.value += value,
-	itm.week += value,
-	itm.day += value,
-	itm.total_day_gain += ((value - t.total_cost) / (now - buy)) * 365.25;
+	itm.value += t.__value__[1],
+	itm.week += t.__value__[1],
+	itm.day += t.__value__[1],
+	itm.total_day_gain += ((t.__value__[1] - t.total_cost) / (now - buy)) * 365.25;
 }
 
 
@@ -586,6 +585,9 @@ function displayTrades()
 		let t = gbl.trades[i].metric;
 		let v = gbl.trades[i].value;
 		t.__value__ = v;
+		t.__value__[1] = parseFloat(v[1]);
+		t.total_cost = parseFloat(t.total_cost);
+
 		summaryItem(gbl.sums.vals,t.ticker,t,true,false);
 		summaryItem(gbl.sums.accts,t.account,t,false,false);
 		summaryItem(gbl.sums.curr,t.currency,t,false,false);
@@ -781,7 +783,7 @@ function topLine()
 
 
 <head>
-	<title>Diamond Hands</title>
+	<title>Portfolio Browser</title>
 </head>
 <body onLoad="startUp();">
 
