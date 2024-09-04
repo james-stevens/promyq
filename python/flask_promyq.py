@@ -17,6 +17,16 @@ def get_version():
     return flask.make_response("ERROR: Failed to open version file", 503)
 
 
+@application.route('/promyq/config', methods=['GET'])
+def get_config():
+    my_promyq = promyq.PromYQ()
+    try:
+        this_config = my_promyq.current_config()
+        return flask.make_response(this_config, 200)
+    except promyq.PromyqError as e:
+        return flask.make_response(f"{str(e)}", 503)
+
+
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
     my_promyq = promyq.PromYQ()

@@ -46,6 +46,11 @@ class PromYQ:
         if "PROMYQ_SEVERITY" in os.environ and os.environ["PROMYQ_SEVERITY"] in log.severity_options:
             self.log_severity = log.severity_options[os.environ["PROMYQ_SEVERITY"]]
 
+    def current_config(self):
+        self.set_logging()
+        self.load_file()
+        return self.trades
+
     def prometheus_metrics(self):
         self.set_logging()
         self.load_file()
