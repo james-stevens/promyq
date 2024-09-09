@@ -19,18 +19,17 @@ def get_version():
 
 @application.route('/promyq/config', methods=['GET'])
 def get_config():
-    my_promyq = promyq.PromYQ()
     try:
-        this_config = my_promyq.current_config()
-        return flask.make_response(this_config, 200)
+        my_promyq = promyq.PromYQ()
+        return flask.make_response(my_promyq.current_config(), 200)
     except promyq.PromyqError as e:
         return flask.make_response(f"{str(e)}", 503)
 
 
 @application.route('/metrics', methods=['GET'])
 def get_metrics():
-    my_promyq = promyq.PromYQ()
     try:
+        my_promyq = promyq.PromYQ()
         prom_metrics = my_promyq.prometheus_metrics()
         return flask.make_response("\n".join(prom_metrics) + "\n", 200)
     except promyq.PromyqError as e:
