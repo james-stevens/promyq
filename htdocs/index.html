@@ -1,4 +1,4 @@
-<!--- (c) Copyright 2019-2020, James Stevens ... see LICENSE for details --->
+<!--- (c) Copyright 2019-2024, James Stevens ... see LICENSE for details --->
 <!--- Alternative license arrangements are possible, contact me for more information --->
 <html>
 <head>
@@ -704,9 +704,8 @@ function unerrMsg()
 
 function errMsg(txt,tagged_elm)
 {
-    let hang_elm = null;
 	if (tagged_elm) hang_elm = document.getElementById(tagged_elm);
-    if (!hang_elm) hang_elm = document.getElementById("showMsg");
+    else hang_elm = document.getElementById("showMsg");
 
     let m = document.getElementById("myMsgPop");
     m.style.width = "auto";
@@ -817,7 +816,7 @@ function topLine()
 
 <div id="topSpan">
 <table border=0 cellspacing=0 cellpadding=0 width=100%>
-<tr><td><h1 style="text-align:center">Diamond Hands</h1></td></tr>
+<tr><td><h1 style="text-align:center">Portfolio Browser</h1></td></tr>
 </table>
 </div>
 
