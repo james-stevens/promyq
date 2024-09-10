@@ -171,7 +171,7 @@ function updatePrices() {
 		
 		if (!((data.status)&&(data.status=="success"))) return errMsg("Fetch trades failed");
 
-		gbl.trades = data.data.result;
+		gbl.trades = data.data.result.sort((a,b) => a.metric.ticker.localeCompare(b.metric.ticker));
 
 		let sp_ids = [];
 		for(i in data.trades) {
@@ -474,9 +474,9 @@ function makeRow(v,obj)
 	let showStyle = "dataRow";
 	if ((obj)&&("sty" in obj)) showStyle = obj.sty;
 
-	if ((v.showPrice)&&(!v.market_open)) showStyle = "dataRowOff";
+	if ((v.showPrice)&&(!v.market_open)) showStyle = "dataRow marketOff";
 
-	let x = `<tr onClick="clickRow('${v.name}');" class=${showStyle}>`;
+	let x = `<tr onClick="clickRow('${v.name}');" class="${showStyle}">`;
 	let dca = v.native_cost / v.num;
 
 	if ((obj)&&("tag" in obj)) x += `<td>${obj.tag}</td>`;
@@ -793,7 +793,7 @@ function topLine()
 </table>
 </div>
 
-<div style="height: 100px;">&nbsp;</div>
+<div style="height: 70px;">&nbsp;</div>
 <div id="lowerSpan"></div>
 
 <div><table><tr><td><div onClick="unerrMsg();" id=myMsgPop class='msgPop msgPopNo'></div></td></tr></table></div>

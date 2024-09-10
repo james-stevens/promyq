@@ -111,6 +111,48 @@ function theme_css(theme) {
 .topLink { font-size: 20px; }
 h2 { text-align: center; }
 
+.profit { color: #88ff88; text-align: right; }
+.profit:hover { background-color: #55dd55; color:black; text-align: right; }
+
+.loss { color: #ff6666; text-align: right; }
+.loss:hover { background-color: #dd5555; color:black; text-align: right; }
+
+.none { text-align: right; }
+
+.summaryRow { font-size: 10pt; cursor: pointer; background-color: #${cols[6]}; }
+.summaryRow:hover { background-color: #${cols[2]}; }
+
+.marketOff { background-color: #442222; }
+
+
+#pieCanvas {
+    margin-top:2%;
+    margin-bottom:5%;
+    margin-left:28%;
+    margin-right:28%;
+    border-radius: 20px;
+    padding: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-shadow: 8px 8px #303030;
+    }
+#lineCanvas {
+    margin-top:2%;
+    margin-bottom:5%;
+    margin-left:10%;
+    margin-right:10%;
+    border-radius: 20px;
+    padding: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-shadow: 8px 8px #303030;
+    }
+
+
+.graphDiv { text-align: center; }
+
+
+
 .line {
 	background: #${cols[7]};
 	width: 100%;
@@ -163,8 +205,8 @@ h2 { text-align: center; }
 	top: 0;
 	width: 100%;
 	background-color: #${cols[6]};
-	height: 100px;
-	line-height: 100px;
+	height: 50px;
+	line-height: 50px;
 	margin-top: 0px;
 	padding-left: 0px;
 	padding-top: 1px;
@@ -206,7 +248,7 @@ html {
 th {
 	color: #${cols[0]};
 	font-family: inherit;
-	font-size: 18px;
+	font-size: 17px;
 	font-weight: normal;
 	background-color: #${cols[6]};
 	padding-left: 6px;
