@@ -70,7 +70,7 @@ function callApi(sfx,callback,inData)
 
 	let p = "https";
 	if (!gbl.with_https) p = "http";
-	let url = `${p}://${gbl.server}/api/v1/${sfx}`;
+	let url = `${p}://${gbl.server}${sfx}`;
 	if (debugAPI) console.log("API-URL>>>",url);
 
 	let okResp = 200;
@@ -165,24 +165,24 @@ function refreshRouter()
 function updatePrices() {
 	delete gbl.trades;
 
-	let trades_qry = { "order": ["currency","ticker","when_dt"], join: ":all:" };
+	let now = Math.floor(Date.now()/1000);
 
-	callApi("query?query=trade_current_value",data => {
+	callApi(`/api/v1/query_range?query=trade_current_value&start=${now}&end=${now}&step=1`,data => {
 		
 		if (!((data.status)&&(data.status=="success"))) return errMsg("Fetch trades failed");
 
 		gbl.trades = data.data.result.sort((a,b) => a.metric.ticker.localeCompare(b.metric.ticker));
 
-		let sp_ids = [];
-		for(i in data.trades) {
-			let t = data.trades[i];
-			if (!(sp_ids.includes(t.spot_value_id.spot_price_id)))
-				sp_ids.push(t.spot_value_id.spot_price_id);
+		for(i in gbl.trades) {
+			let t = gbl.trades[i].metric;
+			t.__value__ = gbl.trades[i].values[0];
+			t.__value__[1] = parseFloat(t.__value__[1]);
+			t.total_cost = parseFloat(t.total_cost);
 			}
 
 		refreshRouter();
 
-		}, { method: "POST", callErr: true, json: JSON.stringify(trades_qry) });
+		}, { method: "GET", callErr: true });
 }
 
 
@@ -583,11 +583,6 @@ function displayTrades()
 	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
 	for(let i in gbl.trades) {
 		let t = gbl.trades[i].metric;
-		let v = gbl.trades[i].value;
-		t.__value__ = v;
-		t.__value__[1] = parseFloat(v[1]);
-		t.total_cost = parseFloat(t.total_cost);
-
 		summaryItem(gbl.sums.vals,t.ticker,t,true,false);
 		summaryItem(gbl.sums.accts,t.account,t,false,false);
 		summaryItem(gbl.sums.curr,t.currency,t,false,false);
