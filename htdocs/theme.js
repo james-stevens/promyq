@@ -119,11 +119,18 @@ h2 { text-align: center; }
 
 .none { text-align: right; }
 
-.summaryRow { font-size: 10pt; cursor: pointer; background-color: #${cols[6]}; }
-.summaryRow:hover { background-color: #${cols[2]}; }
 
 .marketOff { background-color: #442222; }
 
+.summaryRow {
+	font-family: inherit;
+	font-size: 14px;
+	cursor: pointer;
+	color: #${cols[16]};
+	background-color: #${cols[6]};
+	text-overflow: clip;
+	}
+.summaryRow:hover { background-color: #${cols[2]}; }
 
 #pieCanvas {
     margin-top:2%;
