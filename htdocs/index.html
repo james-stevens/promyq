@@ -184,6 +184,8 @@ function updatePrices() {
 			}
 
 		refreshRouter();
+		d = new Date(gbl.trades[i].metric.__value__[0] * 1000)
+		msg(d.toLocaleString());
 
 		}, { method: "GET", callErr: true });
 }
@@ -703,7 +705,7 @@ function unerrMsg()
 function errMsg(txt,tagged_elm)
 {
     let hang_elm = null;
-	hang_elm = document.getElementById(tagged_elm);
+	if (tagged_elm) hang_elm = document.getElementById(tagged_elm);
     if (!hang_elm) hang_elm = document.getElementById("showMsg");
 
     let m = document.getElementById("myMsgPop");
@@ -758,10 +760,9 @@ function popMsg(txt)
 function msg(myMsg,newClass)
 {
 	let m = document.getElementById("showMsg");
-	if (!m) m = document.getElementById("lowerMsg");
 	if (!m) return;
 
-	if (newClass == null) newClass = "fullvis";
+	if (!newClass) newClass = "fullvis";
 	m.className = newClass;
 	m.innerHTML = myMsg;
 	delete gbl.lastMsg;
