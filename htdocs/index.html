@@ -169,7 +169,10 @@ function updatePrices() {
 
 	callApi(`/api/v1/query_range?query=trade_current_value&start=${now}&end=${now}&step=1`,data => {
 		
-		if (!((data.status)&&(data.status=="success"))) return errMsg("Fetch trades failed");
+		if (!((data.status)&&(data.status=="success")&&(data.data.result.length > 1))) {
+			repeatUpdate();
+			return errMsg("Fetch trades failed");
+			}
 
 		gbl.trades = data.data.result.sort((a,b) => a.metric.ticker.localeCompare(b.metric.ticker));
 
@@ -677,28 +680,57 @@ function startUp()
 
 
 
+function def_errMsg(msg,reply,tagged_elm)
+{
+    if ((reply)&&(reply.error)) errMsg(reply.error,tagged_elm); else errMsg(msg,tagged_elm);
+}
+
 
 function unerrMsg()
 {
-	let m = document.getElementById("myMsgPop");
-	let t1 = m.innerHTML;
-	let t2 = gbl.lastErrMsg;
-	if (t2 == null) t2 = "";
-	if (t1 == t2) m.className = "msgPop msgPopNo";
-	delete gbl.lastErrMsg;
+    let m = document.getElementById("myMsgPop");
+    let t1 = m.innerHTML;
+    let t2 = ctx.lastErrMsg;
+    if (t2 == null) t2 = "";
+    if (t1 == t2) m.className = "msgPop msgPopNo";
+    delete ctx.lastErrMsg;
+    if ("err_msg_tout" in ctx) clearTimeout(ctx.err_msg_tout);
+    delete ctx.err_msg_tout;
 }
 
 
 
-function errMsg(txt)
+function errMsg(txt,tagged_elm)
 {
-	let m = document.getElementById("myMsgPop");
-	m.className = 'msgPop msgPopYes';
-	m.innerHTML = `${gbl.warn} ${txt}`;
-	gbl.lastErrMsg = m.innerHTML;
-	msg("");
-	setTimeout(unerrMsg,2500);
+    let hang_elm = null;
+	hang_elm = document.getElementById(tagged_elm);
+    if (!hang_elm) hang_elm = document.getElementById("showMsg");
+
+    let m = document.getElementById("myMsgPop");
+    m.style.width = "auto";
+    if (txt.slice(0,1)!="&") txt = gbl.warn + " " + txt;
+    m.innerHTML = "&nbsp;"+txt+"&nbsp;";
+
+    let p_box = hang_elm.getBoundingClientRect();
+    let m_box = m.getBoundingClientRect();
+    let m_width = m_box.width;
+
+    if (m_box.width < p_box.width) {
+        m.style.width = p_box.width + "px";
+        m_width = p_box.width;
+        }
+    let centre = p_box.x + (p_box.width/2);
+    let x_pos = centre - (m_width / 2)
+    m.style.left = x_pos + "px";
+    m.style.top = p_box.y + p_box.height + "px";
+
+    m.className = 'msgPop msgPopYes';
+    ctx.lastErrMsg = m.innerHTML;
+    ctx.err_msg_tout = setTimeout(unerrMsg,2500);
+
+    return false;
 }
+
 
 
 
