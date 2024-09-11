@@ -167,12 +167,14 @@ function refreshRouter()
 
 
 
-function find_s_day_item(t)
+function find_old_item(items,t)
 {
-	for(let d in gbl.d_day) {
-		if ((d.metrics.account == t.metrics.account)
-		 && (d.metrics.ticker == t.metrics.ticker)
-		 && (d.metrics.when == t.metrics.when))
+	if ((!t)||(!items)||(items<1)) return null;
+	for(let idx in items) {
+		let d = items[idx];
+		if ((d.metric.account == t.account)
+		 && (d.metric.ticker == t.ticker)
+		 && (d.metric.when == t.when))
 			{
 			if (d.values.length>1) return d; else return null;
 			}
@@ -182,18 +184,8 @@ function find_s_day_item(t)
 
 
 
-function find_s_week_item(t)
-{
-	for(let w in gbl.d_week) {
-		if ((w.metrics.account == t.metrics.account)
-		 && (w.metrics.ticker == t.metrics.ticker)
-		 && (w.metrics.when == t.metrics.when))
-			{
-			if (w.values.length>1) return w; else return null;
-			}
-		}
-	return null;
-}
+function find_s_week_item(t) { return find_old_item(gbl.s_week,t); }
+function find_s_day_item(t) { return find_old_item(gbl.s_day,t); }
 
 
 
@@ -602,14 +594,15 @@ function showOneTrade()
 
 function summaryItem(items,name,t,showPrice,singleTrade)
 {
+	let sw = find_s_week_item(t);
+	let sd = find_s_day_item(t);
+
 	if (!(name in items)) {
-		let sw = find_s_week_item(t);
-		let sd = find_s_day_item(t);
 
 		items[name] = {
 			name: name,
-			week_price: (sw)?(parseFloat(sw.values[0][1]) / sw.quantity) : (t.total_cost / t.quantity);
-			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.quantity) : (t.total_cost / t.quantity);
+			week_price: (sw)?(parseFloat(sw.values[0][1]) / sw.metric.quantity) : (t.total_cost / t.quantity),
+			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.metric.quantity) : (t.total_cost / t.quantity),
 			price: t.__value__[1] / t.quantity,
 			cost: t.total_cost / t.quantity,
 			total_day_gain:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
@@ -631,8 +624,8 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 	itm.native_cost += (t.price * t.quantity);
 	itm.cost += t.total_cost;
 	itm.value += t.__value__[1],
-	itm.week += itm.week_price;
-	itm.day += itm.day_price;
+	itm.week += (sw)?parseFloat(sw.values[0][1]):t.__value__[1];
+	itm.day += (sd)?parseFloat(sd.values[0][1]):t.__value__[1];
 	itm.total_day_gain += ((t.__value__[1] - t.total_cost) / (now - buy)) * 365.25;
 }
 
