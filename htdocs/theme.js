@@ -120,7 +120,17 @@ h2 { text-align: center; }
 .none { text-align: right; }
 
 
-.marketOff { background-color: #442222; }
+.marketOff {
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    color: #${cols[16]};
+    background-color: #442222;
+    text-overflow: clip;
+    }
+
+.marketOff:hover { background-color: #${cols[2]}; }
+
 
 .summaryRow {
 	font-family: inherit;

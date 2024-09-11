@@ -233,7 +233,7 @@ function updatePrices()
 					t.__value__[1] = parseFloat(t.__value__[1]);
 					t.total_cost = parseFloat(t.total_cost);
 					t.qualtity = parseFloat(t.qualtity);
-					t.open = (t.openm == "1");
+					t.open = (t.open == "1");
 					}
 
 				refreshRouter();
@@ -534,7 +534,7 @@ function makeRow(v,obj)
 	let showStyle = "dataRow";
 	if ((obj)&&("sty" in obj)) showStyle = obj.sty;
 
-	if ((v.showPrice)&&(!v.market_open)) showStyle = "dataRow marketOff";
+	if ((v.showPrice)&&(!v.market_open)) showStyle = "marketOff";
 
 	let x = `<tr onClick="clickRow('${v.name}');" class="${showStyle}">`;
 	let dca = v.native_cost / v.num;
