@@ -169,10 +169,8 @@ function updatePrices() {
 
 	callApi(`/api/v1/query_range?query=trade_current_value&start=${now}&end=${now}&step=1`,data => {
 		
-		if (!((data.status)&&(data.status=="success")&&(data.data.result.length > 1))) {
-			repeatUpdate();
-			return errMsg("Fetch trades failed");
-			}
+		if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
+		if (data.data.result.length < 1) { repeatUpdate(); return false; }
 
 		gbl.trades = data.data.result.sort((a,b) => a.metric.ticker.localeCompare(b.metric.ticker));
 
@@ -651,9 +649,7 @@ function displayTrades()
 
 function cancelTimers()
 {
-let id=0;
-
-	while(id = timers.pop()) clearTimeout(id);
+	for(let id;id=timers.pop();) clearTimeout(id);
 }
 
 
