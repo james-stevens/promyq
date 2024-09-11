@@ -25,7 +25,10 @@ var gbl = {
     bin: "&#x2702;",
     warn: "&#x26a0;",
 
-	theme: "dark"
+	theme: "dark",
+
+	start_week: 0,
+	start_day: 0
 	};
 
 changeTheme("dark");
@@ -151,6 +154,7 @@ function btn(call,txt,hlp,sz) {
 }
 
 
+
 function refreshRouter()
 {
 	if ("one_trade" in ctx) showOneTrade()
@@ -162,39 +166,90 @@ function refreshRouter()
 }
 
 
+
+function find_s_day_item(t)
+{
+	for(let d in gbl.d_day) {
+		if ((d.metrics.account == t.metrics.account)
+		 && (d.metrics.ticker == t.metrics.ticker)
+		 && (d.metrics.when == t.metrics.when))
+			{
+			if (d.values.length>1) return d; else return null;
+			}
+		}
+	return null;
+}
+
+
+
+function find_s_week_item(t)
+{
+	for(let w in gbl.d_week) {
+		if ((w.metrics.account == t.metrics.account)
+		 && (w.metrics.ticker == t.metrics.ticker)
+		 && (w.metrics.when == t.metrics.when))
+			{
+			if (w.values.length>1) return w; else return null;
+			}
+		}
+	return null;
+}
+
+
+
 function trade_compare(t1,t2)
 {
-	for (item of ["open","ticker","when"]) {
-		if ((t1.metric[item])&&(t2.metric[item])&&(t1.metric[item]!=t2.metric[item])) 
+	for (let item of ["open","ticker","when"]) {
+		if ((t1.metric[item])&&(t2.metric[item])&&(t1.metric[item]!=t2.metric[item]))
 		return t1.metric[item].localeCompare(t2.metric[item]);
 		}
 	return 0;
 }
 
 
-function updatePrices() {
+
+function updatePrices()
+{
 	delete gbl.trades;
 
 	let now = Math.floor(Date.now()/1000);
+	let d_now = new Date(now);
+	let s_day = now - (now % 86400);
+	let s_week = s_day - (d_now.getDay() * 86400);
+	let qry = `/api/v1/query_range?query=trade_current_value&start=${s_day}&end=${s_day+900}&step=300`;
+	callApi(qry,data => {
 
-	callApi(`/api/v1/query_range?query=trade_current_value&start=${now}&end=${now}&step=1`,data => {
-		
 		if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
-		if (data.data.result.length < 1) { repeatUpdate(); return false; }
+		gbl.s_day = data.data.result;
 
-		gbl.trades = data.data.result.sort(trade_compare);
+		let qry = `/api/v1/query_range?query=trade_current_value&start=${s_week}&end=${s_week+900}&step=300`;
+		callApi(qry,data => {
 
-		for(i in gbl.trades) {
-			let t = gbl.trades[i].metric;
-			t.__value__ = gbl.trades[i].values[0];
-			t.__value__[1] = parseFloat(t.__value__[1]);
-			t.total_cost = parseFloat(t.total_cost);
-			}
+			if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
+			gbl.s_week = data.data.result;
 
-		refreshRouter();
-		d = new Date(gbl.trades[i].metric.__value__[0] * 1000)
-		msg(d.toLocaleString());
+			callApi(`/api/v1/query_range?query=trade_current_value&start=${now}&end=${now}&step=1`,data => {
+				
+				if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
+				if (data.data.result.length < 1) { repeatUpdate(); return false; }
 
+				gbl.trades = data.data.result.sort(trade_compare);
+
+				for(i in gbl.trades) {
+					let t = gbl.trades[i].metric;
+					t.__value__ = gbl.trades[i].values[0];
+					t.__value__[1] = parseFloat(t.__value__[1]);
+					t.total_cost = parseFloat(t.total_cost);
+					t.qualtity = parseFloat(t.qualtity);
+					t.open = (t.openm == "1");
+					}
+
+				refreshRouter();
+				d = new Date(gbl.trades[i].metric.__value__[0] * 1000)
+				msg(d.toLocaleString());
+
+				}, { method: "GET", callErr: true });
+			}, { method: "GET", callErr: true });
 		}, { method: "GET", callErr: true });
 }
 
@@ -410,7 +465,7 @@ function pieByGain()
 	let my = { data: [], label: [] };
 
 	tot = 0;
-	for(let i in gbl.sums.vals) 
+	for(let i in gbl.sums.vals)
 		if (gbl.sums.vals[i].value > gbl.sums.vals[i].cost)
 			tot += (gbl.sums.vals[i].cost - gbl.sums.vals[i].value);
 
@@ -495,14 +550,10 @@ function makeRow(v,obj)
 	if ((obj)&&("tag" in obj)) x += `<td>${obj.tag}</td>`;
 	else {
 		if ((v.showPrice)&&(v.google))
-			x += `<td><a onClick="blockClicked('${v.name}');" href="https://www.google.com/finance/quote/${v.google}" target=_window>${v.name}</a></td>`;
-		else {
-			if (v.name == "GBP")
-				x += `<td><a href="https://www.google.com/finance/quote/GBP-USD" target=_window>${v.name}</a></td>`;
+				x += `<td><a onClick="blockClicked('${v.name}');" href="https://www.google.com/finance/quote/${v.google}" target=_window>${v.name}</a></td>`;
 			else
-				x += `<td>${v.name}</td>`;
+				x += `<td><a onClick="blockClicked('${v.name}');" href="https://finance.yahoo.com/quote/${v.name}/" target=_window>${v.name}</a></td>`;
 		}
-	}
 
 	x += valCell(v.cost,0,0);
 	x += valCell(v.value,v.value,v.cost);
@@ -552,17 +603,20 @@ function showOneTrade()
 function summaryItem(items,name,t,showPrice,singleTrade)
 {
 	if (!(name in items)) {
+		let sw = find_s_week_item(t);
+		let sd = find_s_day_item(t);
+
 		items[name] = {
 			name: name,
-			week_price: 0,
-			day_price: 0,
-			price: 0,
-			cost: 0,
+			week_price: (sw)?(parseFloat(sw.values[0][1]) / sw.quantity) : (t.total_cost / t.quantity);
+			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.quantity) : (t.total_cost / t.quantity);
+			price: t.__value__[1] / t.quantity,
+			cost: t.total_cost / t.quantity,
 			total_day_gain:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
 			single_trade: singleTrade,
-			market_open: false,
+			market_open: t.open,
 			showPrice: showPrice,
-			google: t.ticker,
+			google: t.google,
 			currency: t.currency
 			};
 		}
@@ -577,8 +631,8 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 	itm.native_cost += (t.price * t.quantity);
 	itm.cost += t.total_cost;
 	itm.value += t.__value__[1],
-	itm.week += t.__value__[1],
-	itm.day += t.__value__[1],
+	itm.week += itm.week_price;
+	itm.day += itm.day_price;
 	itm.total_day_gain += ((t.__value__[1] - t.total_cost) / (now - buy)) * 365.25;
 }
 
@@ -794,7 +848,7 @@ function topLine()
     x += "</td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
     x += "<td><div id='showBatch'></div></td>";
 
-	x += "<td>" 
+	x += "<td>"
 		+ btn("pieByWeek()","Week","Show Pie of changes this week")
 		+ btn("pieByToday()","Today","Show Pie of changes today")
 		+ btn("pieByHolding()","Balance","Show Pie by Current Value")
