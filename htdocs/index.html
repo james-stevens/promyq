@@ -164,7 +164,7 @@ function refreshRouter()
 
 function trade_compare(t1,t2)
 {
-	for (item in ["open","ticker","when"]) {
+	for (item of ["open","ticker","when"]) {
 		if ((t1.metric[item])&&(t2.metric[item])&&(t1.metric[item]!=t2.metric[item])) 
 		return t1.metric[item].localeCompare(t2.metric[item]);
 		}
