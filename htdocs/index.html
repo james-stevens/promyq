@@ -162,6 +162,16 @@ function refreshRouter()
 }
 
 
+function trade_compare(t1,t2)
+{
+	for (item in ["open","ticker","when"]) {
+		if ((t1.metric[item])&&(t2.metric[item])&&(t1.metric[item]!=t2.metric[item])) 
+		return t1.metric[item].localeCompare(t2.metric[item]);
+		}
+	return 0;
+}
+
+
 function updatePrices() {
 	delete gbl.trades;
 
@@ -172,7 +182,7 @@ function updatePrices() {
 		if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
 		if (data.data.result.length < 1) { repeatUpdate(); return false; }
 
-		gbl.trades = data.data.result.sort((a,b) => a.metric.ticker.localeCompare(b.metric.ticker));
+		gbl.trades = data.data.result.sort(trade_compare);
 
 		for(i in gbl.trades) {
 			let t = gbl.trades[i].metric;

@@ -192,6 +192,8 @@ class PromYQ:
             infill_dict["name"] = this_price["longName"]
         if "currency" in this_price:
             infill_dict["currency"] = this_price["currency"]
+        if "marketState" in this_price:
+            infill_dict["open"] = ("1" if this_price['marketState'] == "REGULAR" else "0")
 
         # user applied tags
         if "tags" in self.trades and this_ticker in self.trades["tags"]:
@@ -204,7 +206,6 @@ class PromYQ:
                            format(this_price["regularMarketChange"], f".{self.decimal_places}f"))
 
         retlist.append(f"ticker_price{infill}" + format(this_price["regularMarketPrice"], f".{self.decimal_places}f"))
-        retlist.append(f"ticker_market_open{infill}" + ("1" if this_price['marketState'] == "REGULAR" else "0"))
 
     def trade_metrics(self, retlist, acct, this_trade):
         if "ticker" not in this_trade:
@@ -234,11 +235,14 @@ class PromYQ:
             "account": acct_name,
             "ticker": this_ticker,
             "currency": this_currency,
+            "quantity": this_trade["quantity"],
             "when": this_trade['date_bought']
         }
 
         if "total_cost" in this_trade:
             infill_dict["total_cost"] = format(this_trade["total_cost"], f".{self.decimal_places}f")
+        if "marketState" in this_price:
+            infill_dict["open"] = ("1" if this_price['marketState'] == "REGULAR" else "0")
 
         # user applied tags
         if "tags" in this_acct:
@@ -249,8 +253,6 @@ class PromYQ:
             infill_dict.update(self.trades["tags"][this_ticker])
 
         infill = "{" + ",".join([f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
-
-        retlist.append(f"trade_market_open{infill}" + ("1" if this_price['marketState'] == "REGULAR" else "0"))
 
         retlist.append(f"trade_current_value{infill}" + format(this_value, f".{self.decimal_places}f"))
 
@@ -263,9 +265,7 @@ class PromYQ:
             f"# HELP trade_current_value Trade current value in {self.home_currency}",
             "# TYPE trade_current_value gauge",
             f"# HELP trade_current_profit Trade current profit in {self.home_currency}",
-            "# TYPE trade_current_profit gauge", "# HELP trade_market_open Is the market for this trade open",
-            "# TYPE trade_market_open gauge", "# HELP ticker_market_open Is the market for this ticker open",
-            "# TYPE ticker_market_open gauge", "# HELP ticker_price Current market price for this ticker",
+            "# TYPE trade_current_profit gauge", "# HELP ticker_price Current market price for this ticker",
             "# TYPE ticker_price gauge"
         ]
 
