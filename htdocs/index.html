@@ -236,7 +236,7 @@ function updatePrices()
 					t.__value__ = gbl.trades[i].values[0];
 					t.__value__[1] = parseFloat(t.__value__[1]);
 					t.total_cost = parseFloat(t.total_cost);
-					t.qualtity = parseFloat(t.qualtity);
+					t.quantity = parseFloat(t.quantity);
 					t.open = (t.open == "1");
 					}
 
@@ -327,7 +327,7 @@ function pieChart(my)
 		data: {
 		  labels: my.label,
 		  datasets: [{
-			label: "Population (millions)",
+			label: "Proportion (%age)",
 			backgroundColor: cols,
 			data: my.data,
 			borderRadius: 5,
@@ -686,7 +686,7 @@ function displayTrades()
 			if (t.ticker == i)
 				x += makeRow(gbl.sums.ones[tr],
 					{
-					"sty": "subRow",
+					"sty": "dataRow",
 					"tag": t.when.substr(0,16)
 					}
 				);
