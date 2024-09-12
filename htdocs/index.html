@@ -192,8 +192,12 @@ function find_s_day_item(t) { return find_old_item(gbl.s_day,t); }
 function trade_compare(t1,t2)
 {
 	for (let item of ["open","ticker","when"]) {
-		if ((t1.metric[item])&&(t2.metric[item])&&(t1.metric[item]!=t2.metric[item]))
-		return t1.metric[item].localeCompare(t2.metric[item]);
+		if ((t1.metric[item])&&(t2.metric[item])&&(t1.metric[item]!=t2.metric[item])) {
+			if (item=="open")
+				return t2.metric[item].localeCompare(t1.metric[item]);
+			else
+				return t1.metric[item].localeCompare(t2.metric[item]);
+			}
 		}
 	return 0;
 }
@@ -541,10 +545,13 @@ function makeRow(v,obj)
 
 	if ((obj)&&("tag" in obj)) x += `<td>${obj.tag}</td>`;
 	else {
-		if ((v.showPrice)&&(v.google))
+		if (v.showPrice) {
+			if (v.google)
 				x += `<td><a onClick="blockClicked('${v.name}');" href="https://www.google.com/finance/quote/${v.google}" target=_window>${v.name}</a></td>`;
 			else
 				x += `<td><a onClick="blockClicked('${v.name}');" href="https://finance.yahoo.com/quote/${v.name}/" target=_window>${v.name}</a></td>`;
+			}
+		else x += `<td>${v.name}</td>`;
 		}
 
 	x += valCell(v.cost,0,0);

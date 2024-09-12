@@ -125,7 +125,7 @@ h2 { text-align: center; }
     font-size: 14px;
     cursor: pointer;
     color: #${cols[16]};
-    background-color: #442222;
+    background-color: #331111;
     text-overflow: clip;
     }
 
