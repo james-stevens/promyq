@@ -15,14 +15,14 @@ hl_sipp:
     quantity: 234
     date_bought: 2022-11-11 11:11
     exchange_rate: 1.28
-    total_cost: 56170
+    total_cost: 43875
 
   - ticker: QQQ
     price: 480.00
     quantity: 375
     date_bought: 2022-10-10 10:10
     exchange_rate: 1.23
-    total_cost: 180010
+    total_cost: 146341.46
 
   - ticker: GAW.L
     price: 99.99
@@ -37,4 +37,4 @@ crypto:
     price: 50000
     quantity: 0.125
     date_bought: 2022-13-13 13:13
-    total_cost: 6250
+    total_cost: 4734.84

@@ -631,7 +631,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 
 	itm.count++;
 	itm.num += t.quantity;
-	itm.native_cost += (t.price * t.quantity);
+	itm.native_cost += t.total_cost;
 	itm.cost += t.total_cost;
 	itm.value += t.__value__[1],
 	itm.week += (sw)?parseFloat(sw.values[0][1]):t.__value__[1];
@@ -664,7 +664,7 @@ function displayTrades()
 
 	let x = "<table align=center border=0 cellspacing=1 cellpadding=1><tr>";
 	x += "<colgroup><col width=150></colgroup>"
-	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>Wgt %</th><th>DCA</th>"
+	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>Wgt %</th><th>Cost Avg</th>"
 	x += "<th></th><th>Week +/-</th><th></th><th>Price</th><th>+/-</th><th colspan=2>Day +/-</th>"
 	x += "</tr>"
 
