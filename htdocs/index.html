@@ -2,9 +2,9 @@
 <!--- Alternative license arrangements are possible, contact me for more information --->
 <html>
 <head>
-	<script src="/chart.min.js"></script>
-	<script src="/theme.js"></script>
-	<script src="/palette.js"></script>
+	<script type="text/javascript" src="/chart.min.js"></script>
+	<script type="text/javascript" src="/theme.js"></script>
+	<script type="text/javascript" src="/palette.js"></script>
 </head>
 <style type='text/css'>.msgPop { visibility: hidden;}</style>
 
@@ -277,6 +277,7 @@ function lineGraph(data,title)
 		]
 		},
 		options: {
+			transitions: { resize: { animation: { duration: 400 } } },
 			maintainAspectRatio: true,
 			responsive: true,
 			title: {
@@ -336,6 +337,8 @@ function pieChart(my)
 		  }]
 		},
 		options: {
+			transitions: { resize: { animation: { duration: 400 } } },
+			animation: { animateScale: true, animateRotate: true },
 			plugins: {
 				legend: {
 					display: true,
