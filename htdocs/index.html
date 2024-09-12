@@ -25,13 +25,13 @@ var gbl = {
     bin: "&#x2702;",
     warn: "&#x26a0;",
 
-	theme: "dark",
+	"theme": window.localStorage.theme,
 
 	start_week: 0,
 	start_day: 0
 	};
 
-changeTheme("dark");
+changeTheme(gbl.theme);
 
 
 // will store the context of what the user is up to which the router will use to go back there
@@ -130,6 +130,84 @@ function callApi(sfx,callback,inData)
 
 	document.body.style.cursor="auto";
 }
+
+
+function clr_lazy_hide()
+{
+    if (!ctx.popup) return;
+    if (ctx.popup.timer) clearTimeout(ctx.popup.timer);
+    delete ctx.popup;
+}
+
+
+function hidePopUp()
+{
+    if (!("popup" in ctx)) return;
+    let popup = document.getElementById(ctx.popup.name);
+    if (popup) popup.classList.remove("show")
+    clr_lazy_hide();
+}
+
+function toggleTheme() { togglePopUp("themePopup",5000); }
+
+function do_theme_change(value)
+{
+    clr_lazy_hide();
+    if (value in theme_colours) changeTheme(value);
+    let popup = document.getElementById("themePopup");
+    popup.classList.remove("show")
+}
+
+
+
+function togglePopUp(name,tmout)
+{
+    if ("popup" in ctx) {
+        let save_name = ctx.popup.name;
+        hidePopUp();
+        if (save_name==name) { unerrMsg(); return; }
+        }
+
+    let popup = document.getElementById(name);
+    if (popup) popup.classList.toggle("show");
+
+    let hide_now = null;
+    if (tmout) {
+        hide_now = setTimeout(hidePopUp,tmout);
+        }
+
+    ctx.popup = { "timer": hide_now, "name": name }
+    return false;
+}
+
+
+
+function pretty_prompt(tag)
+{
+    let s = tag.split("_");
+    for(let i in s)
+        s[i] = s[i][0].toUpperCase() + s[i].substr(1);
+    return s.join(" ");
+}
+
+
+
+function make_theme_popup()
+{
+    if ((!theme_colours)||(!Object.keys(theme_colours).length)) {
+        let e = document.getElementById("themeButton");
+        e.style.display = "none";
+        return "";
+        }
+
+    let x = '<table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
+    for(let i in theme_colours)
+        if (i != "default") x += `<tr class=dataRow onClick='do_theme_change("${i}");'><td>${pretty_prompt(i)}</td></tr>`;
+    x += '</table>';
+    return x;
+}
+
+
 
 
 
@@ -843,7 +921,11 @@ function topLine()
     let y = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td width=1 class=dataRow>"
         + `<font size=+1><a title='Open this page in a new window' target=_blank href='${window.origin}${gbl.pathname}?`;
 
-    let x = `'>${gbl.page}</a></font></td><td>` + btn("backToPrices()","Refresh","Reload Data");
+    let x = `'>${gbl.page}</a></font></td><td>`
+		+ `<div class="popBelow">`
+		+ btn("backToPrices()","Refresh","Reload Data")
+		+ btn("toggleTheme()","Theme","Theme")
+		+ `<span class="popBelowText" id="themePopup">` + make_theme_popup() + `</span></div>`;
 
     if ("one_trade" in ctx)
 		x += btn("showOneTrade()",gbl.trades[ctx.one_trade].ticker.ticker + "/" + ctx.one_trade,"This Trade");
