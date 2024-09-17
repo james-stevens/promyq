@@ -1,0 +1,8 @@
+stocks:
+  ticker: Stock's Ticker
+  quantity: Quantity Bought
+  date_bought: "Date & Time of Purchase"
+  total_cost: "Total Cost to You"
+
+account:
+  name: "Account Name"

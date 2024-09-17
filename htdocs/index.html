@@ -77,15 +77,18 @@ function callApi(sfx,callback,inData)
 	if (debugAPI) console.log("API-URL>>>",url);
 
 	let okResp = 200;
-	let httpCmd = { headers: { }, method: 'GET' };
+	let httpCmd = { headers: {}, method: 'GET' };
 
 	if (inData != null) {
-		httpCmd.method = inData.method;
-		httpCmd.body = inData.json;
-		httpCmd.headers = {
-			'Accept': 'application/json',
-			'Content-Type': 'application/json'
+		httpCmd = {
+			headers : {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+				},
+			method: inData.method,
+			body: inData.json
 			}
+		if (!httpCmd.method) httpCmd.method = "GET";
 		if ("okResp" in inData) okResp = inData.okResp;
 		}
 	if (debugAPI) console.log("API-HEAD>>>",httpCmd);
@@ -126,10 +129,24 @@ function callApi(sfx,callback,inData)
 			});
 
 		})
-		.catch(err => errMsg(`ERROR: Failed to connect to Prometheus`))
+		.catch(err => errMsg(`ERROR: Failed to connect to backend`))
 
 	document.body.style.cursor="auto";
 }
+
+
+function to_secs(tm)
+{
+	if (!tm) return 0;
+	let ret = parseInt(tm);
+	let last = tm.slice(-1).toLowerCase();
+	if (last=="m") return ret * 60;
+	if (last=="h") return ret * 3600;
+	if (last=="d") return ret * 86400;
+	if (last=="w") return ret * 86400 * 7;
+	return ret;
+}
+
 
 
 function clr_lazy_hide()
@@ -293,25 +310,26 @@ function updatePrices()
 	let qry = `/api/v1/query_range?query=trade_current_value&start=${s_day}&end=${s_day+900}&step=300`;
 	callApi(qry,data => {
 
-		if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
+		if (!((data)&&(data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
 		gbl.s_day = data.data.result;
 
 		let qry = `/api/v1/query_range?query=trade_current_value&start=${s_week}&end=${s_week+900}&step=300`;
 		callApi(qry,data => {
 
-			if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
+			if (!((data)&&(data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
 			gbl.s_week = data.data.result;
 
-			callApi(`/api/v1/query_range?query=trade_current_value&start=${now}&end=${now}&step=1`,data => {
+			let qry = `/api/v1/query_range?query=trade_current_value&start=${now-(gbl.config.refresh_interval*2)}&end=${now}&step=${gbl.config.refresh_interval}`;
+			callApi(qry,data => {
 				
-				if (!((data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
+				if (!((data)&&(data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
 				if (data.data.result.length < 1) { repeatUpdate(); return false; }
 
 				gbl.trades = data.data.result.sort(trade_compare);
 
 				for(i in gbl.trades) {
 					let t = gbl.trades[i].metric;
-					t.__value__ = gbl.trades[i].values[0];
+					t.__value__ = gbl.trades[i].values[gbl.trades[i].values.length-1];
 					t.__value__[1] = parseFloat(t.__value__[1]);
 					t.total_cost = parseFloat(t.total_cost);
 					t.quantity = parseFloat(t.quantity);
@@ -319,7 +337,8 @@ function updatePrices()
 					}
 
 				refreshRouter();
-				d = new Date(gbl.trades[i].metric.__value__[0] * 1000)
+
+				let d = new Date(gbl.trades[0].metric.__value__[0] * 1000)
 				msg(d.toLocaleString());
 
 				}, { method: "GET", callErr: true });
@@ -338,7 +357,7 @@ function lineGraph(data,title)
 		}
 
 	let now = 0
-	for(i in gbl.trades) now += gbl.trades[i].spot_value_id.current_value_gbp;
+	for(i in gbl.trades) now += gbl.trades[i].metric.__value__[1];
 	my.data.push(now);
 	my.label.push("Now");
 
@@ -381,7 +400,11 @@ function graphMode(name)
 function totalGraph()
 {
     graphMode('lineCanvas')
-	callApi("total_values",data => { lineGraph(data.total_values,"End of Day Value") } );
+	let now = Math.floor(Date.now()/1000);
+	let s_day = now - (now % 86400);
+	let s_start = s_day - gbl.config.retention_time;
+	let qry = `/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=86400`;
+	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value",true); } );
 }
 
 
@@ -389,8 +412,38 @@ function totalGraph()
 function weeklyGraph()
 {
 	graphMode('lineCanvas')
-	callApi("week_values",data => { lineGraph(data.week_values,"Running Weekly Value") } );
+	let now = Math.floor(Date.now()/1000);
+	let s_day = now - (now % 86400);
+	let s_start = s_day - (8 * 86400);
+	let qry = `/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=3600`;
+	callApi(qry,(data) => { line_graph_from_data(data.data,"Running Weekly Total"); } );
 }
+
+
+
+function line_graph_from_data(data,title,only_date)
+{
+	let totals = {}
+	for(let i in data.result) {
+		let item = data.result[i];
+		for(let p in item.values) {
+			let pr = item.values[p];
+			if (!(pr[0] in totals)) totals[pr[0]] = 0;
+			totals[pr[0]] += parseFloat(pr[1]);
+			}
+		}
+
+	let spot_values = []
+	for(let i in totals) spot_values.push({ total: totals[i], when_dt: parseInt(i) });
+	sort_spot_values = spot_values.sort((a,b) => (a.when_dt - b.when_dt));
+	for(let i in sort_spot_values) {
+		let d = new Date(sort_spot_values[i].when_dt*1000);
+		sort_spot_values[i].when_dt = (only_date)?d.toLocaleDateString():d.toLocaleString();
+		}
+
+	lineGraph(sort_spot_values,title);
+}
+
 
 
 function pieChart(my)
@@ -817,7 +870,14 @@ function startUp()
 	gbl.bot = document.getElementById("lowerSpan");
 	gbl.top = document.getElementById("topSpan");
 
-	updatePrices();
+	callApi("/promyq/config",data => {
+		if (data) {
+			gbl.config = data;
+			gbl.config.refresh_interval = to_secs(data.refresh_interval),
+			gbl.config.retention_time = to_secs(data.retention_time)
+			}
+		updatePrices();
+		})
 }
 
 
@@ -961,7 +1021,7 @@ function topLine()
 
 <div id="topSpan">
 <table border=0 cellspacing=0 cellpadding=0 width=100%>
-<tr><td><h1 style="text-align:center">Portfolio Browser</h1></td></tr>
+<tr><td><h1 id="showMsg" style="text-align:center">Portfolio Browser</h1></td></tr>
 </table>
 </div>
 
