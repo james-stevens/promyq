@@ -27,8 +27,10 @@ var gbl = {
 
 	"theme": window.localStorage.theme,
 
-	start_week: 0,
-	start_day: 0
+	start_week: null,
+	start_day: null,
+	tm_s_day: 0,
+	tm_s_week: 0
 	};
 
 changeTheme(gbl.theme);
@@ -279,8 +281,8 @@ function find_old_item(items,t)
 
 
 
-function find_s_week_item(t) { return find_old_item(gbl.s_week,t); }
-function find_s_day_item(t) { return find_old_item(gbl.s_day,t); }
+function find_s_week_item(t) { return find_old_item(gbl.start_week,t); }
+function find_s_day_item(t) { return find_old_item(gbl.start_day,t); }
 
 
 
@@ -299,51 +301,61 @@ function trade_compare(t1,t2)
 
 
 
-function updatePrices()
+function update_current_prices()
 {
-	delete gbl.trades;
+	function check_updated_both() {
+		if ((gbl.start_day)&&(gbl.start_week)) redo_current_prices();
+		}
 
 	let now = Math.floor(Date.now()/1000);
 	let d_now = new Date(Date.now());
 	let s_day = now - (now % 86400);
 	let s_week = s_day - (d_now.getDay() * 86400);
-	let qry = `/api/v1/query_range?query=trade_current_value&start=${s_day}&end=${s_day+900}&step=300`;
+
+	if ((gbl.tm_s_day == s_day)&&(gbl.tm_s_week == s_week)) return redo_current_prices();
+
+	gbl.start_day = gbl.start_week = null;
+	callApi(`/api/v1/query_range?query=trade_current_value&start=${s_day}&end=${s_day+900}&step=300`,data => {
+		gbl.tm_s_day = s_day;
+		gbl.start_day = data.data.result;
+		check_updated_both();
+		});
+	callApi(`/api/v1/query_range?query=trade_current_value&start=${s_week}&end=${s_week+900}&step=300`,data => {
+		gbl.start_week = data.data.result;
+		gbl.tm_s_week = s_week;
+		check_updated_both();
+		});
+}
+
+
+
+
+function redo_current_prices()
+{
+	let qry = "/api/v1/query?query=trade_current_value";
 	callApi(qry,data => {
 
 		if (!((data)&&(data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
-		gbl.s_day = data.data.result;
+		if (data.data.result.length < 1) { repeatUpdate(); return errMsg("No Data Returned"); }
 
-		let qry = `/api/v1/query_range?query=trade_current_value&start=${s_week}&end=${s_week+900}&step=300`;
-		callApi(qry,data => {
+		gbl.trades = data.data.result.sort(trade_compare);
 
-			if (!((data)&&(data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
-			gbl.s_week = data.data.result;
+		for(i in gbl.trades) {
+			let t = gbl.trades[i].metric;
+			if (gbl.trades[i].values) t.__value__ = gbl.trades[i].values[gbl.trades[i].values.length-1];
+			if (gbl.trades[i].value) t.__value__ = gbl.trades[i].value;
 
-			let qry = `/api/v1/query_range?query=trade_current_value&start=${now-(gbl.config.refresh_interval*2)}&end=${now}&step=${gbl.config.refresh_interval}`;
-			callApi(qry,data => {
-				
-				if (!((data)&&(data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
-				if (data.data.result.length < 1) { repeatUpdate(); return false; }
+			t.__value__[1] = parseFloat(t.__value__[1]);
+			t.total_cost = parseFloat(t.total_cost);
+			t.quantity = parseFloat(t.quantity);
+			t.open = (t.open == "1");
+			}
 
-				gbl.trades = data.data.result.sort(trade_compare);
+		refreshRouter();
 
-				for(i in gbl.trades) {
-					let t = gbl.trades[i].metric;
-					t.__value__ = gbl.trades[i].values[gbl.trades[i].values.length-1];
-					t.__value__[1] = parseFloat(t.__value__[1]);
-					t.total_cost = parseFloat(t.total_cost);
-					t.quantity = parseFloat(t.quantity);
-					t.open = (t.open == "1");
-					}
-
-				refreshRouter();
-
-				let d = new Date(gbl.trades[0].metric.__value__[0] * 1000)
-				msg(d.toLocaleString());
-
-				}, { method: "GET", callErr: true });
-			}, { method: "GET", callErr: true });
-		}, { method: "GET", callErr: true });
+		let d = new Date(gbl.trades[0].metric.__value__[0] * 1000)
+		msg(d.toLocaleString());
+		});
 }
 
 
@@ -855,7 +867,7 @@ function cancelTimers()
 function repeatUpdate()
 {
 	cancelTimers();
-	timers.push(setTimeout(updatePrices,60000));
+	timers.push(setTimeout(update_current_prices,60000));
 }
 
 
@@ -876,7 +888,7 @@ function startUp()
 			gbl.config.refresh_interval = to_secs(data.refresh_interval),
 			gbl.config.retention_time = to_secs(data.retention_time)
 			}
-		updatePrices();
+		update_current_prices();
 		})
 }
 
@@ -972,7 +984,7 @@ function msg(myMsg,newClass)
 function backToPrices()
 {
 	ctx = {}
-	updatePrices();
+	update_current_prices();
 }
 
 

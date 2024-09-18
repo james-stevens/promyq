@@ -38,21 +38,19 @@ class PromYQ:
         self.log_facility = syslog.LOG_LOCAL1
         self.log_severity = syslog.LOG_INFO
 
-    def set_logging(self):
         if "PROMYQ_FACILITY" in os.environ and os.environ["PROMYQ_FACILITY"] in log.facility_options:
             self.log_facility = log.facility_options[os.environ["PROMYQ_FACILITY"]]
-            syslog.openlog(logoption=syslog.LOG_PID, facility=self.log_facility)
 
         if "PROMYQ_SEVERITY" in os.environ and os.environ["PROMYQ_SEVERITY"] in log.severity_options:
             self.log_severity = log.severity_options[os.environ["PROMYQ_SEVERITY"]]
 
+        syslog.openlog(logoption=syslog.LOG_PID, facility=self.log_facility)
+
     def current_config(self):
-        self.set_logging()
         self.load_file()
         return self.trades
 
     def prometheus_metrics(self):
-        self.set_logging()
         self.load_file()
         self.get_all_tickers()
         self.get_all_prices()

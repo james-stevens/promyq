@@ -120,7 +120,7 @@ h2 { text-align: center; }
 
 .marketOff {
     font-family: inherit;
-    font-size: 14px;
+    font-size: 10pt;
     cursor: pointer;
     color: #${cols[16]};
     background-color: #331111;
@@ -132,7 +132,7 @@ h2 { text-align: center; }
 
 .summaryRow {
 	font-family: inherit;
-	font-size: 14px;
+	font-size: 10pt;
 	cursor: pointer;
 	color: #${cols[16]};
 	background-color: #${cols[6]};
@@ -254,7 +254,7 @@ h2 { text-align: center; }
 html {
 	color: #${cols[16]};
 	font-family:Verdana,Arial,Helvetica,sans-serif;
-	font-size: 14px;
+	font-size: 10pt;
 	background-color: #${cols[4]};
 	scrollbar-base-color: #${cols[5]};
 	scrollbar-arrow-color: #${cols[14]};
@@ -276,7 +276,7 @@ select {
 	background-color: #${cols[3]};
 	color: #${cols[16]};
 	font-family: inherit;
-	font-size: 14px;
+	font-size: 10pt;
 	border-radius: 6px;
 	border: 1px solid;
 	border-color: #${cols[7]};
@@ -287,7 +287,7 @@ input {
 	background-color: #${cols[3]};
 	color: #${cols[16]};
 	font-family: inherit;
-	font-size: 14px;
+	font-size: 10pt;
 	border-radius: 6px;
 	border: 1px solid;
 	border-color: #${cols[7]};
@@ -309,7 +309,7 @@ input {
 	color: #${cols[0]};
 	background-color: #${cols[15]};
 	font-family: inherit;
-	font-size: 14px;
+	font-size: 10pt;
 	}
 
 #allBottom {
@@ -358,7 +358,7 @@ form {
 	background-color: #${cols[17]};
 	color: #${cols[16]};
 	font-family: inherit;
-	font-size: 14px;
+	font-size: 10pt;
 	border-radius: 6px;
 	border: 1px solid;
 	border-color: #${cols[10]};
@@ -423,7 +423,7 @@ td {
 
 .dataRow {
 	font-family: inherit;
-	font-size: 14px;
+	font-size: 10pt;
 	cursor: pointer;
 	color: #${cols[16]};
 	background-color: #${cols[4]};
@@ -451,7 +451,7 @@ td {
 
 .formPrompt {
 	font-family:inherit;
-	font-size: 14px;
+	font-size: 10pt;
 	color: #${cols[16]};
 	text-align: right;
 	padding-top: 8px;
