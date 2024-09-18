@@ -44,7 +44,7 @@ class PromYQ:
         if "PROMYQ_SEVERITY" in os.environ and os.environ["PROMYQ_SEVERITY"] in log.severity_options:
             self.log_severity = log.severity_options[os.environ["PROMYQ_SEVERITY"]]
 
-        syslog.openlog(logoption=syslog.LOG_PID, facility=self.log_facility)
+        syslog.openlog("PromYQ", logoption=syslog.LOG_PID, facility=self.log_facility)
 
     def current_config(self):
         self.load_file()
