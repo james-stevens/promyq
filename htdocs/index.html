@@ -254,12 +254,12 @@ function btn(call,txt,hlp,sz) {
 
 function refreshRouter()
 {
+	topLine();
 	if ("one_trade" in ctx) showOneTrade()
 	else {
 		displayTrades();
 		repeatUpdate();
 		}
-	topLine();
 }
 
 
@@ -355,9 +355,6 @@ function redo_current_prices()
 			}
 
 		refreshRouter();
-
-		let d = new Date(gbl.trades[0].metric.__value__[0] * 1000)
-		msg(d.toLocaleString());
 		});
 }
 
@@ -792,6 +789,8 @@ function displayTrades()
 {
 	function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></td></tr>`; }
 
+	let show_tm = gbl.trades[0].metric.__value__[0];
+
 	topLine();
 	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
 	for(let i in gbl.trades) {
@@ -801,6 +800,7 @@ function displayTrades()
 		summaryItem(gbl.sums.curr,t.currency,t,false,false);
 		summaryItem(gbl.sums.total,"Total",t,false,false);
 		summaryItem(gbl.sums.ones,i,t,true,true);
+		if (t.__value__[0] > show_tm) show_tm = t.__value__[0];
 		}
 
 	multiCur = (Object.keys(gbl.sums.curr).length > 1);
@@ -853,6 +853,8 @@ function displayTrades()
 	x += "</table>";
 	gbl.bot.innerHTML = x;
 
+	let d = new Date(show_tm*1000);
+	msg(d.toLocaleString());
 }
 
 
