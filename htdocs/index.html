@@ -335,8 +335,11 @@ function redo_current_prices()
 	let qry = "/api/v1/query?query=trade_current_value";
 	callApi(qry,data => {
 
-		if (!((data)&&(data.status)&&(data.status=="success"))) { repeatUpdate(); return errMsg("Fetch trades failed"); }
-		if (data.data.result.length < 1) { repeatUpdate(); return errMsg("No Data Returned"); }
+		if (!((data)&&(data.status)&&(data.status=="success")&&(data.data.result.length > 1))) {
+			if (gbl.trades.length > 0) refreshRouter();
+			repeatUpdate();
+			return errMsg("No Data Returned");
+			}
 
 		gbl.trades = data.data.result.sort(trade_compare);
 
@@ -784,15 +787,12 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 
 
 
-function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></td></tr>`; }
-
-
 
 function displayTrades()
 {
-	topLine();
+	function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></td></tr>`; }
 
-	delete gbl.sums;
+	topLine();
 	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
 	for(let i in gbl.trades) {
 		let t = gbl.trades[i].metric;
