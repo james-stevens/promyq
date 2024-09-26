@@ -989,6 +989,8 @@ function backToPrices()
 	update_current_prices();
 }
 
+function openGrafana() { window.open("/grafana/", '_blank').focus(); }
+function openPrometheus() { window.open("/prometheus/", '_blank').focus(); }
 
 function topLine()
 {
@@ -998,6 +1000,8 @@ function topLine()
     let x = `'>${gbl.page}</a></font></td><td>`
 		+ `<div class="popBelow">`
 		+ btn("backToPrices()","Refresh","Reload Data")
+		+ btn("openGrafana()","Graphs","Graphs")
+		+ btn("openPrometheus()","Data","Data")
 		+ btn("toggleTheme()","Theme","Theme")
 		+ `<span class="popBelowText" id="themePopup">` + make_theme_popup() + `</span></div>`;
 

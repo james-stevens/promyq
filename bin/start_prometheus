@@ -12,6 +12,8 @@ chmod 640 /run/prometheus.yml
 chown -R prometheus: /opt/data/prometheus
 
 exec su -s /bin/sh prometheus -c "exec /usr/bin/prometheus \
+	--web.listen-address="127.0.0.1:9090" \
+	--web.external-url=/prometheus/ \
 	--storage.tsdb.path=/opt/data/prometheus \
 	--storage.tsdb.retention.time=${PROMYQ_RETENTION_TIME:-180d} \
 	--config.file=/run/prometheus.yml" 2>&1 \
