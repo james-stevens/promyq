@@ -783,11 +783,11 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 }
 
 
+function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></td></tr>`; }
 
 
 function displayTrades()
 {
-	function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></td></tr>`; }
 
 	let show_tm = gbl.trades[0].metric.__value__[0];
 
@@ -850,6 +850,7 @@ function displayTrades()
 	for(let i in gbl.sums.total)
 		x += makeRow(gbl.sums.total[i],{"sty":"summaryRow"});
 
+	x += `<tr><td class=showVersion colspan=14>v${gbl.config.version}</td></tr>`;
 	x += "</table>";
 	gbl.bot.innerHTML = x;
 

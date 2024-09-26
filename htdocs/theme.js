@@ -4,7 +4,7 @@ const theme_colours = {
 		"C9D1D9","555555","45505B","010409","15202B",
 		"999999","25303B","464B52","35404B","464B52",
 		"464B52","9898ff","808080","767B92","ffffff",
-		"ffd0d0","C9D1D9","25303B","010409"
+		"ffd0d0","C9D1D9","25303B","010409","444444"
 		],
 	"light": [
 		"000000","555555","F0F2F4","F6F8FA","ffffff",
@@ -453,6 +453,15 @@ td {
 	font-family:inherit;
 	font-size: 10pt;
 	color: #${cols[16]};
+	text-align: right;
+	padding-top: 8px;
+	}
+
+
+.showVersion {
+	font-family:inherit;
+	font-size: 10pt;
+	color: #${cols[19]};
 	text-align: right;
 	padding-top: 8px;
 	}
