@@ -35,7 +35,6 @@ var gbl = {
 
 changeTheme(gbl.theme);
 
-
 // will store the context of what the user is up to which the router will use to go back there
 var ctx = { };
 
@@ -244,19 +243,24 @@ function setState(title,state)
 //=============================================================================================
 
 
-function btn(call,txt,hlp,sz) {
-	let ex=""
-	if (sz != null) ex = `style='width: ${sz}px;'`
-	return `<span ${ex} title="${hlp}" class=myBtn onClick="${call}; return false;">${txt}</span>`;
+function btn(call,txt,hlp,extra) {
+	let ex="";
+	let id="";
+	if ((extra)&&(extra.sz)) ex = `style='width: ${sz}px;'`
+	if ((extra)&&(extra.id)) id = `id="${extra.id}"`;
+	return `<span ${ex} title="${hlp}" ${id} class=myBtn onClick="${call}; return false;">${txt}</span>`;
 }
 
 
 
 function refreshRouter()
 {
-	topLine();
-	if ("one_trade" in ctx) showOneTrade()
+	if ("one_trade" in ctx) {
+		refreshBtnTag("Table");
+		showOneTrade()
+		}
 	else {
+		refreshBtnTag("Refresh");
 		displayTrades();
 		repeatUpdate();
 		}
@@ -398,12 +402,19 @@ function lineGraph(data,title)
 }
 
 
+function refreshBtnTag(text)
+{
+	let e = document.getElementById("refreshBtn");
+	if (e) e.innerHTML = text;
+}
+
 
 function graphMode(name)
 {
 	cancelTimers();
 	ctx = { graphs: true };
-	topLine();
+	msg("");
+	refreshBtnTag("Table");
 	gbl.bot.innerHTML = '<div class="graphDiv"><canvas id="'+name+'" style="background: #ffffff"></canvas></div>';
 }
 
@@ -447,7 +458,7 @@ function line_graph_from_data(data,title,only_date)
 
 	let spot_values = []
 	for(let i in totals) spot_values.push({ total: totals[i], when_dt: parseInt(i) });
-	sort_spot_values = spot_values.sort((a,b) => (a.when_dt - b.when_dt));
+	let sort_spot_values = spot_values.sort((a,b) => (a.when_dt - b.when_dt));
 	for(let i in sort_spot_values) {
 		let d = new Date(sort_spot_values[i].when_dt*1000);
 		sort_spot_values[i].when_dt = (only_date)?d.toLocaleDateString():d.toLocaleString();
@@ -460,7 +471,7 @@ function line_graph_from_data(data,title,only_date)
 
 function pieChart(my)
 {
-	sel = "mpn65";
+	let sel = "mpn65";
 	if (my.data.length > 65) sel = "tol-rainbow";
 	cols = []
 	for(i of palette(sel, my.data.length)) cols.push("#"+i);
@@ -504,16 +515,16 @@ function pieByWeek()
 
 	let my = { data: [], label: [] };
 
-	direction = 0; tot = 0;
+	let direction = 0, tot = 0;
 	for(let i in gbl.sums.vals) direction += (gbl.sums.vals[i].value - gbl.sums.vals[i].week);
 	for(let i in gbl.sums.vals) {
-		t = gbl.sums.vals[i];
+		let t = gbl.sums.vals[i];
 		if ((direction > 0)&&(t.value > t.week)) tot += (t.value - t.week);
 		if ((direction < 0)&&(t.value < t.week)) tot += (t.week - t.value);
 		}
 
 	for(let i in gbl.sums.vals) {
-		t = gbl.sums.vals[i];
+		let t = gbl.sums.vals[i];
 		if ((direction > 0)&&(t.value > t.week)) {
 			my.data.push(((t.value-t.week)/tot)*100);
 			my.label.push(t.name);
@@ -535,16 +546,16 @@ function pieByToday()
 
 	let my = { data: [], label: [] };
 
-	direction = 0; tot = 0;
+	let direction = 0, tot = 0;
 	for(let i in gbl.sums.vals) direction += (gbl.sums.vals[i].value - gbl.sums.vals[i].day);
 	for(let i in gbl.sums.vals) {
-		t = gbl.sums.vals[i];
+		let t = gbl.sums.vals[i];
 		if ((direction > 0)&&(t.value > t.day)) tot += (t.value - t.day);
 		if ((direction < 0)&&(t.value < t.day)) tot += (t.day - t.value);
 		}
 
 	for(let i in gbl.sums.vals) {
-		t = gbl.sums.vals[i];
+		let t = gbl.sums.vals[i];
 		if ((direction > 0)&&(t.value > t.day)) {
 			my.data.push(((t.value-t.day)/tot)*100);
 			my.label.push(t.name);
@@ -566,11 +577,11 @@ function pieByHolding()
 
 	let my = { data: [], label: [] };
 
-	tot = 0;
+	let tot = 0;
 	for(let i in gbl.sums.vals) tot += gbl.sums.vals[i].value;
 
 	for(let i in gbl.sums.vals) {
-		t = gbl.sums.vals[i];
+		let t = gbl.sums.vals[i];
 		my.data.push((t.value/tot)*100);
 		my.label.push(t.name);
 		}
@@ -586,11 +597,11 @@ function pieByCost()
 
 	let my = { data: [], label: [] };
 
-	tot = 0;
+	let tot = 0;
 	for(let i in gbl.sums.vals) tot += gbl.sums.vals[i].cost;
 
 	for(let i in gbl.sums.vals) {
-		t = gbl.sums.vals[i];
+		let t = gbl.sums.vals[i];
 		my.data.push((t.cost/tot)*100);
 		my.label.push(t.name);
 		}
@@ -606,13 +617,13 @@ function pieByGain()
 
 	let my = { data: [], label: [] };
 
-	tot = 0;
+	let tot = 0;
 	for(let i in gbl.sums.vals)
 		if (gbl.sums.vals[i].value > gbl.sums.vals[i].cost)
 			tot += (gbl.sums.vals[i].cost - gbl.sums.vals[i].value);
 
 	for(let i in gbl.sums.vals) {
-		t = gbl.sums.vals[i];
+		let t = gbl.sums.vals[i];
 		if (t.cost < t.value) {
 			my.data.push(((t.cost - t.value)/tot)*100);
 			my.label.push(t.name);
@@ -632,7 +643,7 @@ function valCell(val,def,cmp,sfx)
 {
     let s = ""
     if (sfx != null) s = sfx;
-    cls = "none"
+    let cls = "none"
     if (def > cmp) cls = "profit";
     else if (def < cmp) cls = "loss";
 	return `<td class=${cls}>${flfmt(val)}${s}</td>`;
@@ -735,7 +746,7 @@ function numDays(dt) { return new Date(dt).getTime() / 1000 / 86400; }
 function showOneTrade()
 {
 	let this_trade = gbl.trades[ctx.one_trade];
-	x = "<table align=center>"
+	let x = "<table align=center>"
 	for(t in this_trade)
 		if ((!(typeof(this_trade[t]) == "object"))&&(col_desc[t] != null))
 			x = x + `<tr class=dataRow><td class=formPrompt>${col_desc[t]} : </td><td>${this_trade[t]}</td></tr>`;
@@ -791,7 +802,6 @@ function displayTrades()
 
 	let show_tm = gbl.trades[0].metric.__value__[0];
 
-	topLine();
 	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
 	for(let i in gbl.trades) {
 		let t = gbl.trades[i].metric;
@@ -803,7 +813,7 @@ function displayTrades()
 		if (t.__value__[0] > show_tm) show_tm = t.__value__[0];
 		}
 
-	multiCur = (Object.keys(gbl.sums.curr).length > 1);
+	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
 
 	let x = "<table align=center border=0 cellspacing=1 cellpadding=1><tr>";
 	x += "<colgroup><col width=150></colgroup>"
@@ -811,7 +821,7 @@ function displayTrades()
 	x += "<th></th><th>Week +/-</th><th></th><th>Price</th><th>+/-</th><th colspan=2>Day +/-</th>"
 	x += "</tr>"
 
-	cur = gbl.trades[0].currency;
+	let cur = gbl.trades[0].currency;
 	for(let i in gbl.sums.vals) {
 		if ((multiCur)&&(gbl.sums.vals[i].currency != cur)) {
 			if (cur in gbl.sums.curr)
@@ -820,7 +830,7 @@ function displayTrades()
 			}
 		x += makeRow(gbl.sums.vals[i]);
 
-		sty = "none";
+		let sty = "none";
 		if (("openTag" in ctx)&&(ctx.openTag == i)) sty = "table-row-group";
 
 		x += `<tbody style="display: ${sty};" id="blk_${i}">`;
@@ -842,7 +852,7 @@ function displayTrades()
 
 	x += spaceRow(5);
 
-	sorted_accts = Object.entries(gbl.sums.accts).sort((a, b) => a[0].localeCompare(b[0]));
+	let sorted_accts = Object.entries(gbl.sums.accts).sort((a, b) => a[0].localeCompare(b[0]));
 
 	for(let i in sorted_accts)
 		x += makeRow(gbl.sums.accts[sorted_accts[i][0]]);
@@ -885,6 +895,7 @@ function startUp()
 	gbl.bot = document.getElementById("lowerSpan");
 	gbl.top = document.getElementById("topSpan");
 
+	topLine();
 	callApi("/promyq/config",data => {
 		if (data) {
 			gbl.config = data;
@@ -920,8 +931,8 @@ function unerrMsg()
 
 function errMsg(txt,tagged_elm)
 {
+    let hang_elm = document.getElementById("showMsg");
 	if (tagged_elm) hang_elm = document.getElementById(tagged_elm);
-    else hang_elm = document.getElementById("showMsg");
 
     let m = document.getElementById("myMsgPop");
     m.style.width = "auto";
@@ -1000,10 +1011,10 @@ function topLine()
 
     let x = `'>${gbl.page}</a></font></td><td>`
 		+ `<div class="popBelow">`
-		+ btn("backToPrices()","Refresh","Reload Data")
-		+ btn("openGrafana()","Graphs","Graphs")
-		+ btn("openPrometheus()","Data","Data")
-		+ btn("toggleTheme()","Theme","Theme")
+		+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn"})
+		+ btn("openGrafana()","Graphs","Open Grafana in a new window")
+		+ btn("openPrometheus()","Data","Open Prometheus in a new window")
+		+ btn("toggleTheme()","Theme","Change the UI theme")
 		+ `<span class="popBelowText" id="themePopup">` + make_theme_popup() + `</span></div>`;
 
     if ("one_trade" in ctx)
