@@ -739,7 +739,6 @@ function makeRow(v,obj)
 }
 
 
-function numDays(dt) { return new Date(dt).getTime() / 1000 / 86400; }
 
 
 
@@ -758,6 +757,7 @@ function showOneTrade()
 
 function summaryItem(items,name,t,showPrice,singleTrade)
 {
+	function numDays(dt) { return new Date(dt).getTime() / 1000 / 86400; }
 	let sw = find_s_week_item(t);
 	let sd = find_s_day_item(t);
 
@@ -836,13 +836,15 @@ function displayTrades()
 		x += `<tbody style="display: ${sty};" id="blk_${i}">`;
 		for(let tr in gbl.trades) {
 			let t = gbl.trades[tr].metric;
-			if (t.ticker == i)
+			if (t.ticker == i) {
+				let d = new Date(t.when);
 				x += makeRow(gbl.sums.ones[tr],
 					{
 					"sty": "dataRow",
-					"tag": t.when.substr(0,16)
+					"tag": d.toLocaleString(undefined, {dateStyle:'short',timeStyle:'short'})
 					}
-				);
+					);
+				}
 			}
 		x += "</tbody>";
 		}
