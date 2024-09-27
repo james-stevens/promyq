@@ -315,12 +315,12 @@ function update_current_prices()
 	if ((gbl.tm_s_day == s_day)&&(gbl.tm_s_week == s_week)) return redo_current_prices();
 
 	gbl.start_day = gbl.start_week = null;
-	callApi(`/api/v1/query_range?query=trade_current_value&start=${s_day}&end=${s_day+900}&step=300`,data => {
+	callApi(`/prometheus/api/v1/query_range?query=trade_current_value&start=${s_day}&end=${s_day+900}&step=300`,data => {
 		gbl.tm_s_day = s_day;
 		gbl.start_day = data.data.result;
 		check_updated_both();
 		});
-	callApi(`/api/v1/query_range?query=trade_current_value&start=${s_week}&end=${s_week+900}&step=300`,data => {
+	callApi(`/prometheus/api/v1/query_range?query=trade_current_value&start=${s_week}&end=${s_week+900}&step=300`,data => {
 		gbl.start_week = data.data.result;
 		gbl.tm_s_week = s_week;
 		check_updated_both();
@@ -332,11 +332,11 @@ function update_current_prices()
 
 function redo_current_prices()
 {
-	let qry = "/api/v1/query?query=trade_current_value";
+	let qry = "/prometheus/api/v1/query?query=trade_current_value";
 	callApi(qry,data => {
 
 		if (!((data)&&(data.status)&&(data.status=="success")&&(data.data.result.length > 1))) {
-			if (gbl.trades.length > 0) refreshRouter();
+			if ((gbl.trades)&&(gbl.trades.length)&&(gbl.trades.length > 0)) refreshRouter();
 			repeatUpdate();
 			return errMsg("No Data Returned");
 			}
@@ -415,7 +415,7 @@ function totalGraph()
 	let now = Math.floor(Date.now()/1000);
 	let s_day = now - (now % 86400);
 	let s_start = s_day - gbl.config.retention_time;
-	let qry = `/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=86400`;
+	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=86400`;
 	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value",true); } );
 }
 
@@ -427,7 +427,7 @@ function weeklyGraph()
 	let now = Math.floor(Date.now()/1000);
 	let s_day = now - (now % 86400);
 	let s_start = s_day - (8 * 86400);
-	let qry = `/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=3600`;
+	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=3600`;
 	callApi(qry,(data) => { line_graph_from_data(data.data,"Running Weekly Total"); } );
 }
 
