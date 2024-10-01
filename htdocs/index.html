@@ -27,6 +27,9 @@ var gbl = {
 
 	"theme": window.localStorage.theme,
 
+	auto_refresh: 60000,
+	last_table_data: "",
+
 	start_week: null,
 	start_day: null,
 	tm_s_day: 0,
@@ -799,7 +802,6 @@ function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></
 
 function displayTrades()
 {
-
 	let show_tm = gbl.trades[0].metric.__value__[0];
 
 	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
@@ -864,7 +866,11 @@ function displayTrades()
 
 	x += `<tr><td class=showVersion colspan=14>v${gbl.config.version}</td></tr>`;
 	x += "</table>";
-	gbl.bot.innerHTML = x;
+
+	if (gbl.last_table_data != x) {
+		gbl.last_table_data = x;
+		gbl.bot.innerHTML = x;
+		}
 
 	let d = new Date(show_tm*1000);
 	msg(d.toLocaleString());
@@ -882,7 +888,7 @@ function cancelTimers()
 function repeatUpdate()
 {
 	cancelTimers();
-	timers.push(setTimeout(update_current_prices,60000));
+	timers.push(setTimeout(update_current_prices,gbl.auto_refresh));
 }
 
 
@@ -903,6 +909,7 @@ function startUp()
 			gbl.config = data;
 			gbl.config.refresh_interval = to_secs(data.refresh_interval),
 			gbl.config.retention_time = to_secs(data.retention_time)
+			gbl.auto_refresh = (gbl.config.refresh_interval / 2) * 1000;
 			}
 		update_current_prices();
 		})
@@ -1000,6 +1007,7 @@ function msg(myMsg,newClass)
 function backToPrices()
 {
 	ctx = {}
+	gbl.last_table_data = "";
 	update_current_prices();
 }
 
