@@ -1031,11 +1031,9 @@ function openPrometheus() { openURL("/prometheus/"); }
 
 function topLine()
 {
-    let y = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td width=1 class=dataRow>"
-        + `<font size=+1><a title='Open this page in a new window' target=_blank href='${window.origin}${gbl.pathname}?`;
+    let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr>";
 
-    let x = `'>${gbl.page}</a></font></td><td>`
-		+ `<div class="popBelow">`
+    x += `<tr><td><div class="popBelow">`
 		+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn"})
 		+ btn("openGrafana()","Graphs","Open Grafana in a new window")
 		+ btn("openPrometheus()","Data","Open Prometheus in a new window")
@@ -1058,9 +1056,9 @@ function topLine()
 		+ btn("totalGraph()","All Time","Show total graph")
 		+ "</td>"
 
-    x += "</tr><table><hr>";
+    x += "</tr><table>";
 
-    gbl.top.innerHTML = y + btoa(JSON.stringify(gbl.state)) + x;
+    gbl.top.innerHTML = x;
 }
 
 
