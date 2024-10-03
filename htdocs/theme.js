@@ -358,7 +358,7 @@ form {
 	background-color: #${cols[17]};
 	color: #${cols[16]};
 	font-family: inherit;
-	font-size: 10pt;
+	font-size: 11pt;
 	border-radius: 6px;
 	border: 1px solid;
 	border-color: #${cols[10]};

@@ -249,7 +249,7 @@ function setState(title,state)
 function btn(call,txt,hlp,extra) {
 	let ex="";
 	let id="";
-	if ((extra)&&(extra.sz)) ex = `style='width: ${sz}px;'`
+	if ((extra)&&(extra.sz)) ex = `style='width: ${extra.sz}px;'`
 	if ((extra)&&(extra.id)) id = `id="${extra.id}"`;
 	return `<span ${ex} title="${hlp}" ${id} class=myBtn onClick="${call}; return false;">${txt}</span>`;
 }
@@ -818,6 +818,17 @@ function displayTrades()
 	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
 
 	let x = "<table align=center border=0 cellspacing=1 cellpadding=1><tr>";
+	x += '<tr><td colspan="14" class="btmBtnBar">';
+	x += btn("request_transfer(true)","Add Trade","Add a trade to an account",{sz:100});
+	x += btn("request_transfer(true)","Add Account","Add a new account",{sz:100});
+	if (gbl.yaml.buttons) {
+		for(let id in gbl.yaml.buttons) {
+			x += btn(`openURL('${gbl.yaml.buttons[id]}')`,id,"",{sz:100});
+			console.log(">>>>",id,gbl.yaml.buttons[id]);
+			}
+		}
+	x += '</td></tr>';
+	x += spaceRow(15);
 	x += "<colgroup><col width=150></colgroup>"
 	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>Wgt %</th><th>Cost Avg</th>"
 	x += "<th></th><th>Week +/-</th><th></th><th>Price</th><th>+/-</th><th colspan=2>Day +/-</th>"
@@ -900,7 +911,7 @@ function startUp()
 	gbl.with_https = (window.location.protocol == "https:");
 	gbl.server = window.location.host;
 
-	gbl.bot = document.getElementById("lowerSpan");
+	gbl.bot = document.getElementById("userSpace");
 	gbl.top = document.getElementById("topSpan");
 
 	topLine();
@@ -911,8 +922,11 @@ function startUp()
 			gbl.config.retention_time = to_secs(data.retention_time)
 			gbl.auto_refresh = (gbl.config.refresh_interval / 2) * 1000;
 			}
-		update_current_prices();
-		})
+		callApi("/promyq/trades",data => {
+			if (data) gbl.yaml = data;
+			update_current_prices();
+			});
+		});
 }
 
 
@@ -1011,8 +1025,9 @@ function backToPrices()
 	update_current_prices();
 }
 
-function openGrafana() { window.open("/grafana/", '_blank').focus(); }
-function openPrometheus() { window.open("/prometheus/", '_blank').focus(); }
+function openURL(url) { window.open(url, '_blank').focus(); }
+function openGrafana() { openURL("/grafana/"); }
+function openPrometheus() { openURL("/prometheus/"); }
 
 function topLine()
 {
@@ -1066,7 +1081,7 @@ function topLine()
 </div>
 
 <div style="height: 70px;">&nbsp;</div>
-<div id="lowerSpan"></div>
+<div><span class="botSpace" id="userSpace" style="width: 0%; display: block;"></span></div>
 
 <div><table><tr><td><div onClick="unerrMsg();" id=myMsgPop class='msgPop msgPopNo'></div></td></tr></table></div>
 </body></html>
