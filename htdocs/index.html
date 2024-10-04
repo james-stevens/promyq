@@ -30,6 +30,8 @@ var gbl = {
 	auto_refresh: 60000,
 	last_table_data: "",
 
+	pie_margins: "0px 20% 0px 20%",
+
 	start_week: null,
 	start_day: null,
 	tm_s_day: 0,
@@ -412,20 +414,20 @@ function refreshBtnTag(text)
 }
 
 
-function graphMode(name)
+function graphMode(name,margin)
 {
 	cancelTimers();
 	ctx = { graphs: true };
 	msg("");
 	refreshBtnTag("Table");
-	gbl.bot.innerHTML = '<div class="graphDiv"><canvas id="'+name+'" style="background: #ffffff"></canvas></div>';
+	gbl.bot.innerHTML = `<div class="graphDiv"><canvas id=${name} style="margin: ${margin}; background: #ffffff"></canvas></div>`;
 }
 
 
 
 function totalGraph()
 {
-    graphMode('lineCanvas')
+    graphMode('lineCanvas',"10px")
 	let now = Math.floor(Date.now()/1000);
 	let s_day = now - (now % 86400);
 	let s_start = s_day - gbl.config.retention_time;
@@ -437,7 +439,7 @@ function totalGraph()
 
 function weeklyGraph()
 {
-	graphMode('lineCanvas')
+	graphMode('lineCanvas',"10px")
 	let now = Math.floor(Date.now()/1000);
 	let s_day = now - (now % 86400);
 	let s_start = s_day - (8 * 86400);
@@ -514,7 +516,7 @@ function pieChart(my)
 
 function pieByWeek()
 {
-	graphMode('pieCanvas')
+	graphMode('pieCanvas',gbl.pie_margins)
 
 	let my = { data: [], label: [] };
 
@@ -545,7 +547,7 @@ function pieByWeek()
 
 function pieByToday()
 {
-	graphMode('pieCanvas')
+	graphMode('pieCanvas',gbl.pie_margins)
 
 	let my = { data: [], label: [] };
 
@@ -576,7 +578,7 @@ function pieByToday()
 
 function pieByHolding()
 {
-	graphMode('pieCanvas')
+	graphMode('pieCanvas',gbl.pie_margins)
 
 	let my = { data: [], label: [] };
 
@@ -596,7 +598,7 @@ function pieByHolding()
 
 function pieByCost()
 {
-	graphMode('pieCanvas')
+	graphMode('pieCanvas',gbl.pie_margins)
 
 	let my = { data: [], label: [] };
 
@@ -616,7 +618,7 @@ function pieByCost()
 
 function pieByGain()
 {
-	graphMode('pieCanvas')
+	graphMode('pieCanvas',gbl.pie_margins)
 
 	let my = { data: [], label: [] };
 
