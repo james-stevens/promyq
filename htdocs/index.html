@@ -18,12 +18,12 @@ debugAPI = false;
 console.clear();
 
 var gbl = {
-    page: "&#x1F5CE;",
-    tick: "&#x2611;",
-    cross: "&#x2612;",
-    timer: "&#x23f3;",
-    bin: "&#x2702;",
-    warn: "&#x26a0;",
+	page: "&#x1F5CE;",
+	tick: "&#x2611;",
+	cross: "&#x2612;",
+	timer: "&#x23f3;",
+	bin: "&#x2702;",
+	warn: "&#x26a0;",
 
 	"theme": window.localStorage.theme,
 
@@ -157,77 +157,77 @@ function to_secs(tm)
 
 function clr_lazy_hide()
 {
-    if (!ctx.popup) return;
-    if (ctx.popup.timer) clearTimeout(ctx.popup.timer);
-    delete ctx.popup;
+	if (!ctx.popup) return;
+	if (ctx.popup.timer) clearTimeout(ctx.popup.timer);
+	delete ctx.popup;
 }
 
 
 function hidePopUp()
 {
-    if (!("popup" in ctx)) return;
-    let popup = document.getElementById(ctx.popup.name);
-    if (popup) popup.classList.remove("show")
-    clr_lazy_hide();
+	if (!("popup" in ctx)) return;
+	let popup = document.getElementById(ctx.popup.name);
+	if (popup) popup.classList.remove("show")
+	clr_lazy_hide();
 }
 
 function toggleTheme() { togglePopUp("themePopup",5000); }
 
 function do_theme_change(value)
 {
-    clr_lazy_hide();
-    if (value in theme_colours) changeTheme(value);
-    let popup = document.getElementById("themePopup");
-    popup.classList.remove("show")
+	clr_lazy_hide();
+	if (value in theme_colours) changeTheme(value);
+	let popup = document.getElementById("themePopup");
+	popup.classList.remove("show")
 }
 
 
 
 function togglePopUp(name,tmout)
 {
-    if ("popup" in ctx) {
-        let save_name = ctx.popup.name;
-        hidePopUp();
-        if (save_name==name) { unerrMsg(); return; }
-        }
+	if ("popup" in ctx) {
+		let save_name = ctx.popup.name;
+		hidePopUp();
+		if (save_name==name) { unerrMsg(); return; }
+		}
 
-    let popup = document.getElementById(name);
-    if (popup) popup.classList.toggle("show");
+	let popup = document.getElementById(name);
+	if (popup) popup.classList.toggle("show");
 
-    let hide_now = null;
-    if (tmout) {
-        hide_now = setTimeout(hidePopUp,tmout);
-        }
+	let hide_now = null;
+	if (tmout) {
+		hide_now = setTimeout(hidePopUp,tmout);
+		}
 
-    ctx.popup = { "timer": hide_now, "name": name }
-    return false;
+	ctx.popup = { "timer": hide_now, "name": name }
+	return false;
 }
 
 
 
 function pretty_prompt(tag)
 {
-    let s = tag.split("_");
-    for(let i in s)
-        s[i] = s[i][0].toUpperCase() + s[i].substr(1);
-    return s.join(" ");
+	let s = tag.split("_");
+	for(let i in s)
+		s[i] = s[i][0].toUpperCase() + s[i].substr(1);
+	return s.join(" ");
 }
 
 
 
 function make_theme_popup()
 {
-    if ((!theme_colours)||(!Object.keys(theme_colours).length)) {
-        let e = document.getElementById("themeButton");
-        e.style.display = "none";
-        return "";
-        }
+	if ((!theme_colours)||(!Object.keys(theme_colours).length)) {
+		let e = document.getElementById("themeButton");
+		e.style.display = "none";
+		return "";
+		}
 
-    let x = '<table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
-    for(let i in theme_colours)
-        if (i != "default") x += `<tr class=dataRow onClick='do_theme_change("${i}");'><td>${pretty_prompt(i)}</td></tr>`;
-    x += '</table>';
-    return x;
+	let x = '<table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
+	for(let i in theme_colours)
+		if (i != "default") x += `<tr class=dataRow onClick='do_theme_change("${i}");'><td>${pretty_prompt(i)}</td></tr>`;
+	x += '</table>';
+	return x;
 }
 
 
@@ -427,7 +427,7 @@ function graphMode(name,margin)
 
 function totalGraph()
 {
-    graphMode('lineCanvas',"10px")
+	graphMode('lineCanvas',"10px")
 	let now = Math.floor(Date.now()/1000);
 	let s_day = now - (now % 86400);
 	let s_start = s_day - gbl.config.retention_time;
@@ -646,11 +646,11 @@ function flfmt(val) { return val.toLocaleString(undefined,{ minimumFractionDigit
 
 function valCell(val,def,cmp,sfx)
 {
-    let s = ""
-    if (sfx != null) s = sfx;
-    let cls = "none"
-    if (def > cmp) cls = "profit";
-    else if (def < cmp) cls = "loss";
+	let s = ""
+	if (sfx != null) s = sfx;
+	let cls = "none"
+	if (def > cmp) cls = "profit";
+	else if (def < cmp) cls = "loss";
 	return `<td class=${cls}>${flfmt(val)}${s}</td>`;
 }
 
@@ -936,52 +936,52 @@ function startUp()
 
 function def_errMsg(msg,reply,tagged_elm)
 {
-    if ((reply)&&(reply.error)) errMsg(reply.error,tagged_elm); else errMsg(msg,tagged_elm);
+	if ((reply)&&(reply.error)) errMsg(reply.error,tagged_elm); else errMsg(msg,tagged_elm);
 }
 
 
 function unerrMsg()
 {
-    let m = document.getElementById("myMsgPop");
-    let t1 = m.innerHTML;
-    let t2 = ctx.lastErrMsg;
-    if (t2 == null) t2 = "";
-    if (t1 == t2) m.className = "msgPop msgPopNo";
-    delete ctx.lastErrMsg;
-    if ("err_msg_tout" in ctx) clearTimeout(ctx.err_msg_tout);
-    delete ctx.err_msg_tout;
+	let m = document.getElementById("myMsgPop");
+	let t1 = m.innerHTML;
+	let t2 = ctx.lastErrMsg;
+	if (t2 == null) t2 = "";
+	if (t1 == t2) m.className = "msgPop msgPopNo";
+	delete ctx.lastErrMsg;
+	if ("err_msg_tout" in ctx) clearTimeout(ctx.err_msg_tout);
+	delete ctx.err_msg_tout;
 }
 
 
 
 function errMsg(txt,tagged_elm)
 {
-    let hang_elm = document.getElementById("showMsg");
+	let hang_elm = document.getElementById("showMsg");
 	if (tagged_elm) hang_elm = document.getElementById(tagged_elm);
 
-    let m = document.getElementById("myMsgPop");
-    m.style.width = "auto";
-    if (txt.slice(0,1)!="&") txt = gbl.warn + " " + txt;
-    m.innerHTML = "&nbsp;"+txt+"&nbsp;";
+	let m = document.getElementById("myMsgPop");
+	m.style.width = "auto";
+	if (txt.slice(0,1)!="&") txt = gbl.warn + " " + txt;
+	m.innerHTML = "&nbsp;"+txt+"&nbsp;";
 
-    let p_box = hang_elm.getBoundingClientRect();
-    let m_box = m.getBoundingClientRect();
-    let m_width = m_box.width;
+	let p_box = hang_elm.getBoundingClientRect();
+	let m_box = m.getBoundingClientRect();
+	let m_width = m_box.width;
 
-    if (m_box.width < p_box.width) {
-        m.style.width = p_box.width + "px";
-        m_width = p_box.width;
-        }
-    let centre = p_box.x + (p_box.width/2);
-    let x_pos = centre - (m_width / 2)
-    m.style.left = x_pos + "px";
-    m.style.top = p_box.y + p_box.height + "px";
+	if (m_box.width < p_box.width) {
+		m.style.width = p_box.width + "px";
+		m_width = p_box.width;
+		}
+	let centre = p_box.x + (p_box.width/2);
+	let x_pos = centre - (m_width / 2)
+	m.style.left = x_pos + "px";
+	m.style.top = p_box.y + p_box.height + "px";
 
-    m.className = 'msgPop msgPopYes';
-    ctx.lastErrMsg = m.innerHTML;
-    ctx.err_msg_tout = setTimeout(unerrMsg,2500);
+	m.className = 'msgPop msgPopYes';
+	ctx.lastErrMsg = m.innerHTML;
+	ctx.err_msg_tout = setTimeout(unerrMsg,2500);
 
-    return false;
+	return false;
 }
 
 
@@ -1033,34 +1033,36 @@ function openPrometheus() { openURL("/prometheus/"); }
 
 function topLine()
 {
-    let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr>";
+	let sz = 50;
 
-    x += `<tr><td><div class="popBelow">`
-		+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn"})
-		+ btn("openGrafana()","Graphs","Open Grafana in a new window")
-		+ btn("openPrometheus()","Data","Open Prometheus in a new window")
-		+ btn("toggleTheme()","Theme","Change the UI theme")
+	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr>";
+
+	x += `<tr><td><div class="popBelow">`
+		+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})
+		+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})
+		+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})
+		+ btn("toggleTheme()","Theme","Change the UI theme",{sz:sz})
 		+ `<span class="popBelowText" id="themePopup">` + make_theme_popup() + `</span></div>`;
 
-    if ("one_trade" in ctx)
+	if ("one_trade" in ctx)
 		x += btn("showOneTrade()",gbl.trades[ctx.one_trade].ticker.ticker + "/" + ctx.one_trade,"This Trade");
 
-    x += "</td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
-    x += "<td><div id='showBatch'></div></td>";
+	x += "</td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
+	x += "<td><div id='showBatch'></div></td>";
 
 	x += "<td>"
-		+ btn("pieByWeek()","Week","Show Pie of changes this week")
-		+ btn("pieByToday()","Today","Show Pie of changes today")
-		+ btn("pieByHolding()","Balance","Show Pie by Current Value")
-		+ btn("pieByGain()","Gain","Show pie by Gain")
-		+ btn("pieByCost()","Cost","Show pie by Cost")
-		+ btn("weeklyGraph()","7-Day","Show weekly graph")
-		+ btn("totalGraph()","All Time","Show total graph")
+		+ btn("pieByWeek()","Week","Show Pie of changes this week",{sz:sz})
+		+ btn("pieByToday()","Today","Show Pie of changes today",{sz:sz})
+		+ btn("pieByHolding()","Balance","Show Pie by Current Value",{sz:sz})
+		+ btn("pieByGain()","Gain","Show pie by Gain",{sz:sz})
+		+ btn("pieByCost()","Cost","Show pie by Cost",{sz:sz})
+		+ btn("weeklyGraph()","7-Day","Show weekly graph",{sz:sz})
+		+ btn("totalGraph()","All Time","Show total graph",{sz:sz})
 		+ "</td>"
 
-    x += "</tr><table>";
+	x += "</tr><table>";
 
-    gbl.top.innerHTML = x;
+	gbl.top.innerHTML = x;
 }
 
 
