@@ -400,10 +400,11 @@ td {
 	font-weight: bold;
 	font-family:inherit;
 	font-size: inherit;
-	vertical-align: top;
+	vertical-align: middle;
 	padding-left: 7px;
 	padding-right: 7px;
 	padding-top: 2px;
+	padding-bottom: 2px;
 	white-space: normal;
 	min-width: 50%;
 	white-space: nowrap;
@@ -413,9 +414,11 @@ td {
 .dataCell {
 	font-family:inherit;
 	font-size: inherit;
-	vertical-align: top;
+	vertical-align: middle;
 	padding-left: 7px;
 	padding-right: 7px;
+	padding-top: 2px;
+	padding-bottom: 2px;
 	white-space: normal;
 	min-width: 50%;
 	white-space: nowrap;

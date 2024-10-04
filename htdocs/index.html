@@ -46,15 +46,16 @@ var ctx = { };
 var timers = [];
 
 var col_desc = {
-	"trade_id":null,
-	"when_dt":"When bought",
+	"ticker":"Stock Ticker",
+	"when":"When bought",
 	"quantity":"Number of shares",
 	"currency":"Currency",
 	"price":"Price paid",
 	"exchange_rate":"Exchange rate",
-	"total_cost":"Total cost (GBP)",
-	"account_held":"Holding Account",
-	":rowid:":null
+	"total_cost":"Total cost",
+	"account":"Holding Account",
+	"__val_val__":"Current Value",
+	"__val_dttm__":"Last Price Update"
 	};
 
 //=============================================================================================
@@ -356,8 +357,14 @@ function redo_current_prices()
 			let t = gbl.trades[i].metric;
 			if (gbl.trades[i].values) t.__value__ = gbl.trades[i].values[gbl.trades[i].values.length-1];
 			if (gbl.trades[i].value) t.__value__ = gbl.trades[i].value;
+			if (t.__value__) {
+				t.__value__[1] = parseFloat(t.__value__[1]);
+				t.__val_tm__ = t.__value__[0];
+				t.__val_val__ = t.__value__[1];
+				let d = new Date(t.__val_tm__ * 1000);
+				t.__val_dttm__ = d.toLocaleString();
+				}
 
-			t.__value__[1] = parseFloat(t.__value__[1]);
 			t.total_cost = parseFloat(t.total_cost);
 			t.quantity = parseFloat(t.quantity);
 			t.open = (t.open == "1");
@@ -378,7 +385,7 @@ function lineGraph(data,title)
 		}
 
 	let now = 0
-	for(i in gbl.trades) now += gbl.trades[i].metric.__value__[1];
+	for(i in gbl.trades) now += gbl.trades[i].metric.__val_val__;
 	my.data.push(now);
 	my.label.push("Now");
 
@@ -749,11 +756,12 @@ function makeRow(v,obj)
 
 function showOneTrade()
 {
-	let this_trade = gbl.trades[ctx.one_trade];
+	msg("");
+	let this_trade = gbl.trades[ctx.one_trade].metric;
 	let x = "<table align=center>"
 	for(t in this_trade)
-		if ((!(typeof(this_trade[t]) == "object"))&&(col_desc[t] != null))
-			x = x + `<tr class=dataRow><td class=formPrompt>${col_desc[t]} : </td><td>${this_trade[t]}</td></tr>`;
+		if ((typeof(this_trade[t]) != "object")&&(col_desc[t] != null))
+			x = x + `<tr class=dataRow><td class=promptCell>${col_desc[t]} :</td><td class=dataCell>${this_trade[t]}</td></tr>`;
 	x = x + "</table>"
 	gbl.bot.innerHTML = x;
 }
@@ -772,7 +780,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 			name: name,
 			week_price: (sw)?(parseFloat(sw.values[0][1]) / sw.metric.quantity) : (t.total_cost / t.quantity),
 			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.metric.quantity) : (t.total_cost / t.quantity),
-			price: t.__value__[1] / t.quantity,
+			price: t.__val_val__ / t.quantity,
 			cost: t.total_cost / t.quantity,
 			total_day_gain:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
 			single_trade: singleTrade,
@@ -785,17 +793,17 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 
 	let itm = items[name];
 
-	let now = Math.round(t.__value__[0] / 86400);
+	let now = Math.round(t._val_tm__ / 86400);
 	let buy = numDays(t.when);
 
 	itm.count++;
 	itm.num += t.quantity;
 	itm.native_cost += t.total_cost;
 	itm.cost += t.total_cost;
-	itm.value += t.__value__[1],
-	itm.week += (sw)?parseFloat(sw.values[0][1]):t.__value__[1];
-	itm.day += (sd)?parseFloat(sd.values[0][1]):t.__value__[1];
-	itm.total_day_gain += ((t.__value__[1] - t.total_cost) / (now - buy)) * 365.25;
+	itm.value += t.__val_val__,
+	itm.week += (sw)?parseFloat(sw.values[0][1]):t.__val_val__;
+	itm.day += (sd)?parseFloat(sd.values[0][1]):t.__val_val__;
+	itm.total_day_gain += ((t.__val_val__ - t.total_cost) / (now - buy)) * 365.25;
 }
 
 
@@ -804,7 +812,7 @@ function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></
 
 function displayTrades()
 {
-	let show_tm = gbl.trades[0].metric.__value__[0];
+	let show_tm = gbl.trades[0].metric.__val_tm__;
 
 	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
 	for(let i in gbl.trades) {
@@ -814,20 +822,19 @@ function displayTrades()
 		summaryItem(gbl.sums.curr,t.currency,t,false,false);
 		summaryItem(gbl.sums.total,"Total",t,false,false);
 		summaryItem(gbl.sums.ones,i,t,true,true);
-		if (t.__value__[0] > show_tm) show_tm = t.__value__[0];
+		if (t.__val_tm__ > show_tm) show_tm = t.__val_tm__;
 		}
 
 	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
 
+	let sz = 100;
 	let x = "<table align=center border=0 cellspacing=1 cellpadding=1><tr>";
 	x += '<tr><td colspan="14" class="btmBtnBar">';
-	x += btn("request_transfer(true)","Add Trade","Add a trade to an account",{sz:100});
-	x += btn("request_transfer(true)","Add Account","Add a new account",{sz:100});
+	x += btn("request_transfer(true)","Add Trade","Add a trade to an account",{sz:sz});
+	x += btn("request_transfer(true)","Add Account","Add a new account",{sz:sz});
 	if (gbl.yaml.buttons) {
-		for(let id in gbl.yaml.buttons) {
-			x += btn(`openURL('${gbl.yaml.buttons[id]}')`,id,"",{sz:100});
-			console.log(">>>>",id,gbl.yaml.buttons[id]);
-			}
+		for(let id in gbl.yaml.buttons)
+			x += btn(`openURL('${gbl.yaml.buttons[id]}')`,id,"",{sz:sz});
 		}
 	x += '</td></tr>';
 	x += spaceRow(15);
