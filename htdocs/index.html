@@ -47,15 +47,15 @@ var timers = [];
 
 var col_desc = {
 	"ticker":"Stock Ticker",
-	"when":"When bought",
+	"__when__":"When bought",
 	"quantity":"Number of shares",
 	"currency":"Currency",
 	"price":"Price paid",
 	"exchange_rate":"Exchange rate",
 	"total_cost":"Total cost",
 	"account":"Holding Account",
-	"__val_val__":"Current Value",
-	"__val_dttm__":"Last Price Update"
+	"__value__":"Current Value",
+	"__local_time__":"Last Price Update"
 	};
 
 //=============================================================================================
@@ -355,14 +355,14 @@ function redo_current_prices()
 
 		for(i in gbl.trades) {
 			let t = gbl.trades[i].metric;
-			if (gbl.trades[i].values) t.__value__ = gbl.trades[i].values[gbl.trades[i].values.length-1];
-			if (gbl.trades[i].value) t.__value__ = gbl.trades[i].value;
-			if (t.__value__) {
-				t.__value__[1] = parseFloat(t.__value__[1]);
-				t.__val_tm__ = t.__value__[0];
-				t.__val_val__ = t.__value__[1];
-				let d = new Date(t.__val_tm__ * 1000);
-				t.__val_dttm__ = d.toLocaleString();
+			let value = null;
+			if (gbl.trades[i].values) value = gbl.trades[i].values[gbl.trades[i].values.length-1];
+			if (gbl.trades[i].value) value = gbl.trades[i].value;
+			if (value) {
+				t.__value__ = parseFloat(value[1]);
+				t.__time__ = value[0];
+				t.__local_time__ = new Date(t.__time__ * 1000).toLocaleString();
+				t.__wehn__ = new Date(t.when).toLocaleString();
 				}
 
 			t.total_cost = parseFloat(t.total_cost);
@@ -385,7 +385,7 @@ function lineGraph(data,title)
 		}
 
 	let now = 0
-	for(i in gbl.trades) now += gbl.trades[i].metric.__val_val__;
+	for(i in gbl.trades) now += gbl.trades[i].metric.__value__;
 	my.data.push(now);
 	my.label.push("Now");
 
@@ -780,7 +780,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 			name: name,
 			week_price: (sw)?(parseFloat(sw.values[0][1]) / sw.metric.quantity) : (t.total_cost / t.quantity),
 			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.metric.quantity) : (t.total_cost / t.quantity),
-			price: t.__val_val__ / t.quantity,
+			price: t.__value__ / t.quantity,
 			cost: t.total_cost / t.quantity,
 			total_day_gain:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
 			single_trade: singleTrade,
@@ -793,17 +793,17 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 
 	let itm = items[name];
 
-	let now = Math.round(t._val_tm__ / 86400);
+	let now = Math.round(t.__time__ / 86400);
 	let buy = numDays(t.when);
 
 	itm.count++;
 	itm.num += t.quantity;
 	itm.native_cost += t.total_cost;
 	itm.cost += t.total_cost;
-	itm.value += t.__val_val__,
-	itm.week += (sw)?parseFloat(sw.values[0][1]):t.__val_val__;
-	itm.day += (sd)?parseFloat(sd.values[0][1]):t.__val_val__;
-	itm.total_day_gain += ((t.__val_val__ - t.total_cost) / (now - buy)) * 365.25;
+	itm.value += t.__value__,
+	itm.week += (sw)?parseFloat(sw.values[0][1]):t.__value__;
+	itm.day += (sd)?parseFloat(sd.values[0][1]):t.__value__;
+	itm.total_day_gain += ((t.__value__ - t.total_cost) / (now - buy)) * 365.25;
 }
 
 
@@ -812,7 +812,7 @@ function spaceRow(gap) { return `<tr><td><div style="height: ${gap}px;"></div></
 
 function displayTrades()
 {
-	let show_tm = gbl.trades[0].metric.__val_tm__;
+	let show_tm = gbl.trades[0].metric.__time__;
 
 	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
 	for(let i in gbl.trades) {
@@ -822,7 +822,7 @@ function displayTrades()
 		summaryItem(gbl.sums.curr,t.currency,t,false,false);
 		summaryItem(gbl.sums.total,"Total",t,false,false);
 		summaryItem(gbl.sums.ones,i,t,true,true);
-		if (t.__val_tm__ > show_tm) show_tm = t.__val_tm__;
+		if (t.__time__ > show_tm) show_tm = t.__time__;
 		}
 
 	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
