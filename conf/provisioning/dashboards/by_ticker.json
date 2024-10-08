@@ -162,7 +162,7 @@
       },
       "targets": [
         {
-		  "datasource": "Prometheus",
+          "datasource": "Prometheus",
           "editorMode": "code",
           "exemplar": false,
           "expr": "sum by (ticker)(trade_current_value)",
@@ -171,7 +171,7 @@
           "refId": "A"
         },
         {
-		  "datasource": "Prometheus",
+          "datasource": "Prometheus",
           "editorMode": "code",
           "expr": "sum(trade_current_value)",
           "hide": false,

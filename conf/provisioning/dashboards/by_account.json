@@ -54,7 +54,7 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource":"Prometheus",
+      "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -162,7 +162,7 @@
       },
       "targets": [
         {
-		  "datasource":"Prometheus",
+          "datasource": "Prometheus",
           "editorMode": "code",
           "expr": "sum by (account)(trade_current_value)",
           "legendFormat": "__auto",
@@ -170,7 +170,7 @@
           "refId": "A"
         },
         {
-		  "datasource":"Prometheus",
+          "datasource": "Prometheus",
           "editorMode": "code",
           "expr": "sum(trade_current_value)",
           "hide": false,
