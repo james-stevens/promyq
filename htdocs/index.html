@@ -1043,11 +1043,10 @@ function topLine()
 
 	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td>";
 
-	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`
-		+"<td>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>"
-		+"<td>"+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})+"</td>"
-		+"<td>"+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})+"</td>"
-		+'<td><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
+	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`;
+	x += "<td>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>";
+	x += "<td>"+ btn("acctSettings()","Settings","Settings",{sz:sz})+"</td>";
+	x += '<td><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
 			+ `<span class="popBelowText" style="margin-left: -110px" id="themePopup">` + make_theme_popup() + `</span></div></td>`;
 
 	if ("one_trade" in ctx)
@@ -1057,6 +1056,8 @@ function topLine()
 	x += "<td><div id='showBatch'></div></td>";
 
 	x += "<td><table border=0 cellspacing=0 cellpadding=0><tr>"
+		+ "<td>"+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})+"</td>"
+		+ "<td>"+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})+"</td>"
 		+ '<td><div class="popBelow">' + btn("togglePopUp('piesPopup')","Pies","Show Pies",{sz:sz})
 		+ '<span class="popBelowText" style="margin-left: -110px" id="piesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
 
