@@ -172,8 +172,6 @@ function hidePopUp()
 	clr_lazy_hide();
 }
 
-function toggleTheme() { togglePopUp("themePopup",5000); }
-
 function do_theme_change(value)
 {
 	clr_lazy_hide();
@@ -186,6 +184,7 @@ function do_theme_change(value)
 
 function togglePopUp(name,tmout)
 {
+	if (!tmout) tmout = 5000;
 	if ("popup" in ctx) {
 		let save_name = ctx.popup.name;
 		hidePopUp();
@@ -583,7 +582,7 @@ function pieByToday()
 
 
 
-function pieByHolding()
+function pieByBalance()
 {
 	graphMode('pieCanvas',gbl.pie_margins)
 
@@ -1042,32 +1041,34 @@ function topLine()
 {
 	let sz = 50;
 
-	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr>";
+	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td>";
 
-	x += `<tr><td><div class="popBelow">`
-		+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})
-		+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})
-		+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})
-		+ btn("toggleTheme()","Theme","Change the UI theme",{sz:sz})
-		+ `<span class="popBelowText" id="themePopup">` + make_theme_popup() + `</span></div>`;
+	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`
+		+"<td>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>"
+		+"<td>"+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})+"</td>"
+		+"<td>"+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})+"</td>"
+		+'<td><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
+			+ `<span class="popBelowText" style="margin-left: -110px" id="themePopup">` + make_theme_popup() + `</span></div></td>`;
 
 	if ("one_trade" in ctx)
 		x += btn("showOneTrade()",gbl.trades[ctx.one_trade].ticker.ticker + "/" + ctx.one_trade,"This Trade");
 
-	x += "</td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
+	x += "</tr></table></td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
 	x += "<td><div id='showBatch'></div></td>";
 
-	x += "<td>"
-		+ btn("pieByWeek()","Week","Show Pie of changes this week",{sz:sz})
-		+ btn("pieByToday()","Today","Show Pie of changes today",{sz:sz})
-		+ btn("pieByHolding()","Balance","Show Pie by Current Value",{sz:sz})
-		+ btn("pieByGain()","Gain","Show pie by Gain",{sz:sz})
-		+ btn("pieByCost()","Cost","Show pie by Cost",{sz:sz})
-		+ btn("weeklyGraph()","7-Day","Show weekly graph",{sz:sz})
-		+ btn("totalGraph()","All Time","Show total graph",{sz:sz})
-		+ "</td>"
+	x += "<td><table border=0 cellspacing=0 cellpadding=0><tr>"
+		+ '<td><div class="popBelow">' + btn("togglePopUp('piesPopup')","Pies","Show Pies",{sz:sz})
+		+ '<span class="popBelowText" style="margin-left: -110px" id="piesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
 
-	x += "</tr><table>";
+	for(let i of ["Week","Today","Balance","Gain","Cost"])
+		x += `<tr class=dataRow onClick="togglePopUp('piesPopup'); pieBy${i}(); return false"><td>${pretty_prompt(i)}</td></tr>`;
+	x += '</table></span></div></td>'
+
+	x += "<td>"+ btn("weeklyGraph()","7-Day","Show weekly graph",{sz:sz})+"</td>"
+		+"<td>"+ btn("totalGraph()","All Time","Show total graph",{sz:sz})+"</td>"
+		+ "</tr><table>";
+
+	x += "</td></tr><table>";
 
 	gbl.top.innerHTML = x;
 }

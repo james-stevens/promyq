@@ -512,7 +512,7 @@ td {
 	z-index: 1;
 	height: 175px
 	left: 75%;
-	margin-left: -120;
+	margin-left: -120px;
 	margin-top: 30px;
 	border: 1px solid;
 	border-color: #${cols[10]};
