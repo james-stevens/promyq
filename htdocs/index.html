@@ -828,15 +828,17 @@ function displayTrades()
 
 	let sz = 100;
 	let x = "<table align=center border=0 cellspacing=1 cellpadding=1><tr>";
-	x += '<tr><td colspan="14" class="btmBtnBar">';
-	x += btn("request_transfer(true)","Add Trade","Add a trade to an account",{sz:sz});
-	x += btn("request_transfer(true)","Add Account","Add a new account",{sz:sz});
-	if (gbl.yaml.buttons) {
-		for(let id in gbl.yaml.buttons)
-			x += btn(`openURL('${gbl.yaml.buttons[id]}')`,id,"",{sz:sz});
+
+	if ((gbl.yaml.buttons)&&(Object.keys(gbl.yaml.buttons).length > 0)) {
+		x += '<tr><td colspan="14" class="btmBtnBar">';
+		if (gbl.yaml.buttons) {
+			for(let id in gbl.yaml.buttons)
+				x += btn(`openURL('${gbl.yaml.buttons[id]}')`,id,"",{sz:sz});
+			}
+		x += '</td></tr>';
+		x += spaceRow(15);
 		}
-	x += '</td></tr>';
-	x += spaceRow(15);
+
 	x += "<colgroup><col width=150></colgroup>"
 	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>Wgt %</th><th>Cost Avg</th>"
 	x += "<th></th><th>Week +/-</th><th></th><th>Price</th><th>+/-</th><th colspan=2>Day +/-</th>"
@@ -1044,9 +1046,9 @@ function topLine()
 	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td>";
 
 	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`;
-	x += "<td>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>";
-	x += "<td>"+ btn("acctSettings()","Settings","Settings",{sz:sz})+"</td>";
-	x += '<td><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
+	x += "<td class=btnCell>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>";
+	x += "<td class=btnCell>"+ btn("acctSettings()","Settings","Settings",{sz:sz})+"</td>";
+	x += '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
 			+ `<span class="popBelowText" style="margin-left: -110px" id="themePopup">` + make_theme_popup() + `</span></div></td>`;
 
 	if ("one_trade" in ctx)
@@ -1056,16 +1058,16 @@ function topLine()
 	x += "<td><div id='showBatch'></div></td>";
 
 	x += "<td><table border=0 cellspacing=0 cellpadding=0><tr>"
-		+ "<td>"+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})+"</td>"
-		+ "<td>"+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})+"</td>"
-		+ '<td><div class="popBelow">' + btn("togglePopUp('piesPopup')","Pies","Show Pies",{sz:sz})
+		+ "<td class=btnCell>"+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})+"</td>"
+		+ "<td class=btnCell>"+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})+"</td>"
+		+ '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('piesPopup')","Pies","Show Pies",{sz:sz})
 		+ '<span class="popBelowText" style="margin-left: -110px" id="piesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
 
 	for(let i of ["Week","Today","Balance","Gain","Cost"])
 		x += `<tr class=dataRow onClick="togglePopUp('piesPopup'); pieBy${i}(); return false"><td>${pretty_prompt(i)}</td></tr>`;
 
 	x += '</table></span></div></td>'
-		+ '<td><div class="popBelow">' + btn("togglePopUp('linesPopup')","Lines","Show line graphs",{sz:sz})
+		+ '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('linesPopup')","Lines","Show line graphs",{sz:sz})
 		+ '<span class="popBelowText" style="margin-left: -110px" id="linesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
 
 	for(let i of ["Week","Total"])

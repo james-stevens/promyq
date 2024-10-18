@@ -396,6 +396,15 @@ td {
 	white-space: nowrap;
 	}
 
+.btnCell {
+	font-family:inherit;
+	font-size: inherit;
+	vertical-align: top;
+	padding-left: 1px;
+	padding-right: 1px;
+	white-space: nowrap;
+	}
+
 .promptCell {
 	font-weight: bold;
 	font-family:inherit;
