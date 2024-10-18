@@ -431,7 +431,7 @@ function graphMode(name,margin)
 
 
 
-function totalGraph()
+function lineTotal()
 {
 	graphMode('lineCanvas',"10px")
 	let now = Math.floor(Date.now()/1000);
@@ -443,7 +443,7 @@ function totalGraph()
 
 
 
-function weeklyGraph()
+function lineWeek()
 {
 	graphMode('lineCanvas',"10px")
 	let now = Math.floor(Date.now()/1000);
@@ -1062,11 +1062,14 @@ function topLine()
 
 	for(let i of ["Week","Today","Balance","Gain","Cost"])
 		x += `<tr class=dataRow onClick="togglePopUp('piesPopup'); pieBy${i}(); return false"><td>${pretty_prompt(i)}</td></tr>`;
-	x += '</table></span></div></td>'
 
-	x += "<td>"+ btn("weeklyGraph()","7-Day","Show weekly graph",{sz:sz})+"</td>"
-		+"<td>"+ btn("totalGraph()","All Time","Show total graph",{sz:sz})+"</td>"
-		+ "</tr><table>";
+	x += '</table></span></div></td>'
+		+ '<td><div class="popBelow">' + btn("togglePopUp('linesPopup')","Lines","Show line graphs",{sz:sz})
+		+ '<span class="popBelowText" style="margin-left: -110px" id="linesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
+
+	for(let i of ["Week","Total"])
+		x += `<tr class=dataRow onClick="togglePopUp('linesPopup'); line${i}(); return false"><td>${pretty_prompt(i)}</td></tr>`;
+	x += '</table></span></div></td>'
 
 	x += "</td></tr><table>";
 
