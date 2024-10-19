@@ -394,7 +394,7 @@ function lineGraph(data,title)
 		labels: my.label,
 		datasets: [
 			{
-			label: title,
+			label: "Value",
 			data: my.data,
 			borderColor: "#ff8080"
 			}
@@ -404,9 +404,11 @@ function lineGraph(data,title)
 			transitions: { resize: { animation: { duration: 400 } } },
 			maintainAspectRatio: true,
 			responsive: true,
-			title: {
-				display: true,
-				text: 'Total Value'
+			plugins: {
+				title: {
+					display: true,
+					text: title
+				}
 			}
 		}
 	});
@@ -438,7 +440,7 @@ function lineTotal()
 	let s_day = now - (now % 86400);
 	let s_start = s_day - gbl.config.retention_time;
 	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=86400`;
-	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value",true); } );
+	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value, All Time",true); } );
 }
 
 
@@ -450,7 +452,7 @@ function lineWeek()
 	let s_day = now - (now % 86400);
 	let s_start = s_day - (8 * 86400);
 	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=3600`;
-	callApi(qry,(data) => { line_graph_from_data(data.data,"Running Weekly Total"); } );
+	callApi(qry,(data) => { line_graph_from_data(data.data,"This Week, Hour by Hour"); } );
 }
 
 
@@ -480,7 +482,7 @@ function line_graph_from_data(data,title,only_date)
 
 
 
-function pieChart(my)
+function pieChart(my,my_title)
 {
 	let sel = "mpn65";
 	if (my.data.length > 65) sel = "tol-rainbow";
@@ -508,12 +510,12 @@ function pieChart(my)
 				legend: {
 					display: true,
 					position: "right"
+				},
+				title: {
+					display: true,
+					text: my_title
 				}
 			},
-		  title: {
-			display: true,
-			text: 'some text'
-		  }
 		}
 	});
 }
@@ -546,7 +548,7 @@ function pieByWeek()
 			}
 		}
 
-	pieChart(my)
+	pieChart(my,"Loss / Gain this Week")
 }
 
 
@@ -577,7 +579,7 @@ function pieByToday()
 			}
 		}
 
-	pieChart(my)
+	pieChart(my,"Loss / Gain Today")
 }
 
 
@@ -597,7 +599,7 @@ function pieByBalance()
 		my.label.push(t.name);
 		}
 
-	pieChart(my)
+	pieChart(my,"Current Holdings")
 }
 
 
@@ -617,7 +619,7 @@ function pieByCost()
 		my.label.push(t.name);
 		}
 
-	pieChart(my)
+	pieChart(my,"Original Investments")
 }
 
 
@@ -641,7 +643,7 @@ function pieByGain()
 			}
 		}
 
-	pieChart(my)
+	pieChart(my,"Holdings in Profit")
 }
 
 
@@ -1063,7 +1065,7 @@ function topLine()
 		+ '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('piesPopup')","Pies","Show Pies",{sz:sz})
 		+ '<span class="popBelowText" style="margin-left: -110px" id="piesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
 
-	for(let i of ["Week","Today","Balance","Gain","Cost"])
+	for(let i of ["Today","Week","Balance","Gain","Cost"])
 		x += `<tr class=dataRow onClick="togglePopUp('piesPopup'); pieBy${i}(); return false"><td>${pretty_prompt(i)}</td></tr>`;
 
 	x += '</table></span></div></td>'
