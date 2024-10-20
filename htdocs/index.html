@@ -31,6 +31,7 @@ var gbl = {
 	last_table_data: "",
 
 	pie_margins: "0px 20% 0px 20%",
+	places: 2,
 
 	start_week: null,
 	start_day: null,
@@ -54,6 +55,7 @@ const not_account = {
 const col_desc = {
 	"ticker":"Stock Ticker",
 	"__when__":"When bought",
+	"date_bought":"When bought",
 	"quantity":"Number of shares",
 	"currency":"Currency",
 	"price":"Price paid",
@@ -62,6 +64,10 @@ const col_desc = {
 	"account":"Holding Account",
 	"__value__":"Current Value",
 	"__price_update__":"Last Price Update"
+	};
+
+const place_holders = {
+	"date_bought": "Date & Time bought - YYYY-MM-DD HH:MM[:SS]"
 	};
 
 //=============================================================================================
@@ -201,11 +207,9 @@ function togglePopUp(name,tmout)
 	if (popup) popup.classList.toggle("show");
 
 	let hide_now = null;
-	if (tmout) {
-		hide_now = setTimeout(hidePopUp,tmout);
-		}
-
+	if (tmout > 0) hide_now = setTimeout(hidePopUp,tmout);
 	ctx.popup = { "timer": hide_now, "name": name }
+
 	return false;
 }
 
@@ -660,7 +664,7 @@ function pieByGain()
 
 
 
-function flfmt(val) { return val.toLocaleString(undefined,{ minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function flfmt(val) { return val.toLocaleString(undefined,{ minimumFractionDigits: gbl.places, maximumFractionDigits: gbl.places }); }
 
 
 
@@ -947,7 +951,11 @@ function startUp()
 			gbl.auto_refresh = (gbl.config.refresh_interval / 2) * 1000;
 			}
 		callApi("/promyq/trades",data => {
-			if (data) gbl.yaml = data;
+			if (!data) return errMsg("Failed to load config");
+			gbl.yaml = data;
+			if ((gbl.yaml.currency)&&(gbl.yaml.currency.places))
+				gbl.places = parseInt(gbl.yaml.currency.places);
+
 			update_current_prices();
 			});
 		});
@@ -1050,6 +1058,35 @@ function backToPrices()
 }
 
 
+function showTrade(acct,idx)
+{
+	let this_trade = gbl.yaml[acct].stocks[idx];
+	let e = document.getElementById("oneTradePop");
+    let x = "<form name='oneTradeForm'><table align=center>"
+    let first = null;
+    for(t in this_trade) {
+        let desc = t;
+        let ph = "";
+        if (!first) first = t;
+        if (t in col_desc) desc = col_desc[t];
+        if (t in place_holders) ph = place_holders[t];
+		x += `<tr><td class=formPrompt>${desc} :</td><td><input placeholder='${ph}' name='${t}' size=40 value='${this_trade[t]}'></td></tr>`;
+		}
+
+	x += "<tr><td colspan=2><table width=100% border=0>";
+	x += '<tr><td class="btmBtnBar">';
+	x += btn(`saveEditTrade('${acct},${idx})`,"OK","Save changes",{sz:100});
+	x += btn(`togglePopUp('oneTradePop')`,"Cancel","Discard changes",{sz:100});
+    x += "</td></tr></table></td></tr>";
+    e.innerHTML = x+"</table></form>";
+	togglePopUp("oneTradePop",-1);
+	if (first) {
+		document.oneTradeForm.elements[first].focus();
+		document.oneTradeForm.elements[first].select();
+		}
+}
+
+
 function has_matching_price(yaml)
 {
 	for(let i of gbl.trades) {
@@ -1065,13 +1102,14 @@ function show_selected_trades()
 {
 	function add_trades(acct) {
 		let x = "";
-		for(let t of gbl.yaml[acct].stocks) {
+		for(let idx in gbl.yaml[acct].stocks) {
+			let t = gbl.yaml[acct].stocks[idx];
 			if ((by_ticker!="-")&&(t.ticker!=by_ticker)) continue;
-			x += `<tr class=dataRow><td>${account_name(acct)}</td><td>${t.date_bought}</td><td>${t.ticker}</td>`;
-			x += `<td align=right>${t.quantity}</td><td align=right>${t.total_cost}</td>`;
+			x += `<tr onClick="showTrade('${acct}',${idx})" class=dataRow><td>${account_name(acct)}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
+			x += `<td align=right>${t.quantity}</td><td align=right>${flfmt(t.total_cost)}</td>`;
 			let v = has_matching_price(t);
 			if (v) {
-				x += `<td align=right>${v.__value__}</td>`;
+				x += `<td align=right>${flfmt(v.__value__)}</td>`;
 				}
 			x += "</tr>";
 			}
@@ -1081,11 +1119,11 @@ function show_selected_trades()
 	let e = document.getElementById("tradesList");
 	if (!e) return errMsg("Failed to find element 'tradesList'");
 
-	let by_ticker = document.selectTrades.byTicker.value;
-	let by_acct = document.selectTrades.byAccount.value;
+	let by_ticker = document.getElementById("byTicker").value;
+	let by_acct = document.getElementById("byAccount").value;
 
-	let x = "<table align=center border=0 cellspacing=1 cellpadding=1>";
-	for (let h of ["Account","Bought","Ticker","Quantity","Cost","Value"]) x += `<th>${h}</th>`;
+	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
+	for (let h of ["Account","Ticker","Bought","Quantity","Cost","Value"]) x += `<th>${h}</th>`;
 	if (by_acct != "-") x += add_trades(by_acct);
 	else
 		for(let a of gbl.accts) x += add_trades(a);
@@ -1133,15 +1171,18 @@ function acctSettings()
 			*/
 
 			let x = "<table width=100% align=center border=0 cellspacing=1 cellpadding=1><tr>";
-			x += '<tr><td colspan="14" class="btmBtnBar"><form name=selectTrades><table align=center><tr>';
-			x += "<td>&nbsp;By Ticker: <select onChange='show_selected_trades();' name=byTicker><option value='-'>-- select a ticker --";
+			x += '<tr><td class="btmBtnBar">';
+			x += '<div class="popBelow"><table style="min-width: 75%" align=center><tr>';
+			x += "<td>&nbsp;By Ticker: <select onChange='show_selected_trades();' id=byTicker><option value='-'>-- select a ticker --";
 			for(let i of gbl.tickers) x += `<option value="${i}">${i}`;
-			x += "</select></td><td>&nbsp;By Account: <select onChange='show_selected_trades();' name=byAccount><option value='-'>-- select an account --";
+			x += "</select></td><td>&nbsp;By Account: <select onChange='show_selected_trades();' id=byAccount><option value='-'>-- select an account --";
 			for(let i of gbl.accts) x += `<option value="${i}">${account_name(i)}`;
-			x += "</select></td></form>"
-			x += "<td>"+btn("fred()","Add Trade","Add a trade",{sz:100})+"</td>";
-			x += "<td>"+btn("fred()","Add Account","Add an account",{sz:100})+"</td>";
-			x += "</tr></table></td>"
+			x += "</select></td>"
+			x += "<td>"+btn("addTrade()","Add Trade","Add a trade",{sz:100})+"</td>";
+			x += "<td>"+btn("addAccount()","Add Account","Add an account",{sz:100})+"</td>";
+			if (ctx.need_save)
+				x += "<td>"+btn("saveSettings()","Save","Save settings changes",{sz:100})+"</td>";
+			x += '</tr></table><span class="popBelowText" style="margin-left: -110px" id="oneTradePop"></span></td></div>';
 			x += "</tr>"
 			x += "<tr><td><div id=tradesList></div></td></tr>";
 			gbl.bot.innerHTML = x+"</table>";
@@ -1164,7 +1205,7 @@ function topLine()
 
 	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`;
 	x += "<td class=btnCell>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>";
-	x += "<td class=btnCell>"+ btn("acctSettings()","Settings","Settings",{sz:sz})+"</td>";
+	x += "<td class=btnCell>"+ btn("ctx.need_save=false; acctSettings()","Settings","Settings",{sz:sz})+"</td>";
 	x += '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
 			+ `<span class="popBelowText" style="margin-left: -110px" id="themePopup">` + make_theme_popup() + `</span></div></td>`;
 
