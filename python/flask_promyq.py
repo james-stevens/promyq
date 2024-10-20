@@ -7,6 +7,7 @@ import os
 import flask
 import syslog
 
+import json
 import promyq
 import log
 
@@ -45,7 +46,7 @@ def get_config():
 def get_trades():
     try:
         my_promyq = promyq.PromYQ()
-        return flask.make_response(my_promyq.current_config(), 200)
+        return flask.make_response(json.dumps(my_promyq.current_config(),separators=(',', ':'),default=str), 200)
     except promyq.PromyqError as e:
         return flask.make_response(f"{str(e)}", 503)
 

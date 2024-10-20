@@ -45,7 +45,13 @@ var ctx = { };
 
 var timers = [];
 
-var col_desc = {
+const not_account = {
+	"buttons": true,
+	"tags":true,
+	"currency":true
+	};
+
+const col_desc = {
 	"ticker":"Stock Ticker",
 	"__when__":"When bought",
 	"quantity":"Number of shares",
@@ -55,7 +61,7 @@ var col_desc = {
 	"total_cost":"Total cost",
 	"account":"Holding Account",
 	"__value__":"Current Value",
-	"__local_time__":"Last Price Update"
+	"__price_update__":"Last Price Update"
 	};
 
 //=============================================================================================
@@ -351,27 +357,33 @@ function redo_current_prices()
 			}
 
 		gbl.trades = data.data.result.sort(trade_compare);
-
-		for(i in gbl.trades) {
-			let t = gbl.trades[i].metric;
-			let value = null;
-			if (gbl.trades[i].values) value = gbl.trades[i].values[gbl.trades[i].values.length-1];
-			if (gbl.trades[i].value) value = gbl.trades[i].value;
-			if (value) {
-				t.__value__ = parseFloat(value[1]);
-				t.__time__ = value[0];
-				t.__local_time__ = new Date(t.__time__ * 1000).toLocaleString();
-				t.__wehn__ = new Date(t.when).toLocaleString();
-				}
-
-			t.total_cost = parseFloat(t.total_cost);
-			t.quantity = parseFloat(t.quantity);
-			t.open = (t.open == "1");
-			}
-
+		enrich_trades();
 		refreshRouter();
 		});
 }
+
+
+
+function enrich_trades()
+{
+	for(i in gbl.trades) {
+		let t = gbl.trades[i].metric;
+		let value = null;
+		if (gbl.trades[i].values) value = gbl.trades[i].values[gbl.trades[i].values.length-1];
+		if (gbl.trades[i].value) value = gbl.trades[i].value;
+		if (value) {
+			t.__value__ = parseFloat(value[1]);
+			t.__time__ = value[0];
+			t.__price_update__ = new Date(t.__time__ * 1000).toLocaleString();
+			t.__when__ = new Date(t.when).toLocaleString();
+			}
+
+		t.total_cost = parseFloat(t.total_cost);
+		t.quantity = parseFloat(t.quantity);
+		t.open = (t.open == "1");
+		}
+}
+
 
 
 
@@ -1036,6 +1048,109 @@ function backToPrices()
 	gbl.last_table_data = "";
 	update_current_prices();
 }
+
+
+function has_matching_price(yaml)
+{
+	for(let i of gbl.trades) {
+		/* console.log(yaml.ticker,yaml.date_bought==i.metric.when,yaml.ticker == i.metric.ticker); DEBUG */
+		if ((yaml.date_bought == i.metric.when)&&(yaml.ticker == i.metric.ticker)) return i.metric;
+		}
+	return null;
+}
+
+function account_name(acct) { if (gbl.yaml[acct].name) return gbl.yaml[acct].name; else return acct; }
+
+function show_selected_trades()
+{
+	function add_trades(acct) {
+		let x = "";
+		for(let t of gbl.yaml[acct].stocks) {
+			if ((by_ticker!="-")&&(t.ticker!=by_ticker)) continue;
+			x += `<tr class=dataRow><td>${account_name(acct)}</td><td>${t.date_bought}</td><td>${t.ticker}</td>`;
+			x += `<td align=right>${t.quantity}</td><td align=right>${t.total_cost}</td>`;
+			let v = has_matching_price(t);
+			if (v) {
+				x += `<td align=right>${v.__value__}</td>`;
+				}
+			x += "</tr>";
+			}
+		return x;
+		}
+
+	let e = document.getElementById("tradesList");
+	if (!e) return errMsg("Failed to find element 'tradesList'");
+
+	let by_ticker = document.selectTrades.byTicker.value;
+	let by_acct = document.selectTrades.byAccount.value;
+
+	let x = "<table align=center border=0 cellspacing=1 cellpadding=1>";
+	for (let h of ["Account","Bought","Ticker","Quantity","Cost","Value"]) x += `<th>${h}</th>`;
+	if (by_acct != "-") x += add_trades(by_acct);
+	else
+		for(let a of gbl.accts) x += add_trades(a);
+	e.innerHTML = x + "</table>";
+}
+
+
+
+function acctSettings()
+{
+	cancelTimers();
+	refreshBtnTag("Table");
+	callApi("/promyq/trades",data => {
+		if ((!data)||(!Object.keys(data).length)) return errMsg("Failed to fetch trades list");
+		gbl.yaml = data;
+
+		let accts = [];
+		for(let i in gbl.yaml) if (!not_account[i]) accts.push(i);
+		gbl.accts = accts.sort();
+		let tickers = [];
+		for(let s of gbl.accts)
+			for(let idx in gbl.yaml[s].stocks) {
+				let t = gbl.yaml[s].stocks[idx];
+				if (!(t.ticker in tickers)) tickers.push(t.ticker);
+				}
+
+		gbl.tickers = tickers.sort();
+
+		let x = "hi";
+		let qry = "/prometheus/api/v1/query?query=trade_current_value";
+		callApi(qry,data => {
+
+			if (!((data)&&(data.status)&&(data.status=="success")&&(data.data.result.length > 1))) return errMsg("Failed to fetch prices list");
+			gbl.trades = data.data.result.sort(trade_compare);
+
+			enrich_trades();
+
+			/* DEBUG
+			for(let s of gbl.accts)
+				for(let idx in gbl.yaml[s].stocks) {
+					let t = gbl.yaml[s].stocks[idx];
+					let p = has_matching_price(gbl.yaml[s].stocks[idx]);
+					console.log(t,p);
+					}
+			*/
+
+			let x = "<table width=100% align=center border=0 cellspacing=1 cellpadding=1><tr>";
+			x += '<tr><td colspan="14" class="btmBtnBar"><form name=selectTrades><table align=center><tr>';
+			x += "<td>&nbsp;By Ticker: <select onChange='show_selected_trades();' name=byTicker><option value='-'>-- select a ticker --";
+			for(let i of gbl.tickers) x += `<option value="${i}">${i}`;
+			x += "</select></td><td>&nbsp;By Account: <select onChange='show_selected_trades();' name=byAccount><option value='-'>-- select an account --";
+			for(let i of gbl.accts) x += `<option value="${i}">${account_name(i)}`;
+			x += "</select></td></form>"
+			x += "<td>"+btn("fred()","Add Trade","Add a trade",{sz:100})+"</td>";
+			x += "<td>"+btn("fred()","Add Account","Add an account",{sz:100})+"</td>";
+			x += "</tr></table></td>"
+			x += "</tr>"
+			x += "<tr><td><div id=tradesList></div></td></tr>";
+			gbl.bot.innerHTML = x+"</table>";
+			show_selected_trades();
+			});
+		});
+}
+
+
 
 function openURL(url) { window.open(url, '_blank').focus(); }
 function openGrafana() { openURL("/grafana/"); }

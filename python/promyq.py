@@ -290,6 +290,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     my_promyq = PromYQ()
+    print(my_promyq.current_config())
+    print(json.dumps(my_promyq.current_config(),indent=3,default=str))
+    sys.exit(0)
+
     try:
         prom_metrics = my_promyq.prometheus_metrics()
         if args.json:
