@@ -36,8 +36,8 @@ COPY bin /usr/local/bin/
 COPY python /usr/local/python/
 RUN python3 -m compileall /opt/pyrar/python/
 
-COPY htdocs /opt/htdocs/
 COPY inittab /etc/inittab
+COPY htdocs /opt/htdocs/
 
 COPY version /etc/
 CMD [ "/sbin/init" ]
