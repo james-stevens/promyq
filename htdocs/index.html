@@ -1109,7 +1109,7 @@ function acctSettings()
 		for(let s of gbl.accts)
 			for(let idx in gbl.yaml[s].stocks) {
 				let t = gbl.yaml[s].stocks[idx];
-				if (!(t.ticker in tickers)) tickers.push(t.ticker);
+				if (!tickers.includes(t.ticker)) tickers.push(t.ticker);
 				}
 
 		gbl.tickers = tickers.sort();
