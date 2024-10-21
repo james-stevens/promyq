@@ -142,9 +142,9 @@ class PromYQ:
     def get_all_tickers(self):
         self.prices_want = None
         all_tickers = {}
-        for acct in self.trades:
-            if "stocks" in self.trades[acct]:
-                for this_trade in self.trades[acct]["stocks"]:
+        for this_acct in self.trades["accounts"]:
+            if "stocks" in this_acct:
+                for this_trade in this_acct["stocks"]:
                     if "ticker" in this_trade:
                         all_tickers[this_trade["ticker"]] = True
 
@@ -205,7 +205,7 @@ class PromYQ:
 
         retlist.append(f"ticker_price{infill}" + format(this_price["regularMarketPrice"], f".{self.decimal_places}f"))
 
-    def trade_metrics(self, retlist, acct, this_trade):
+    def trade_metrics(self, retlist, this_acct, this_trade):
         if "ticker" not in this_trade:
             return
 
@@ -214,7 +214,6 @@ class PromYQ:
             return
 
         this_price = self.prices_got[this_ticker]
-        this_acct = self.trades[acct]
         acct_name = this_acct['name'] if "name" in this_acct else acct
 
         if "regularMarketPrice" not in this_price:
@@ -269,11 +268,10 @@ class PromYQ:
 
     def trades_list_all(self):
         trades_list = []
-        for acct in self.trades:
-            this_acct = self.trades[acct]
+        for this_acct in self.trades["accounts"]:
             if "stocks" in this_acct:
                 for this_trade in this_acct["stocks"]:
-                    self.trade_metrics(trades_list, acct, this_trade)
+                    self.trade_metrics(trades_list, this_acct, this_trade)
         return trades_list
 
     def tickers_list_all(self):
@@ -290,10 +288,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     my_promyq = PromYQ()
-    print(my_promyq.current_config())
-    print(json.dumps(my_promyq.current_config(),indent=3,default=str))
-    sys.exit(0)
-
     try:
         prom_metrics = my_promyq.prometheus_metrics()
         if args.json:

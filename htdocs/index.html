@@ -46,12 +46,6 @@ var ctx = { };
 
 var timers = [];
 
-const not_account = {
-	"buttons": true,
-	"tags":true,
-	"currency":true
-	};
-
 const col_desc = {
 	"ticker":"Stock Ticker",
 	"__when__":"When bought",
@@ -66,9 +60,23 @@ const col_desc = {
 	"__price_update__":"Last Price Update"
 	};
 
-const place_holders = {
-	"date_bought": "Date & Time bought - YYYY-MM-DD HH:MM[:SS]"
+const edit_box_size = {
+	"date_bought": 20,
+	"ticker": 10,
+	"total_cost": 15,
+	"quantity": 10,
+	"price": 15,
+	"exchange_rate": 15
 	};
+
+const place_holders = {
+	"date_bought": "Date & Time bought - YYYY-MM-DD HH:MM[:SS]",
+	"ticker": "Yahoo Finance stock ticker",
+	"quantity": "Numer of [shares] bought",
+	"total_cost": "Full cost in your currency",
+	};
+
+const new_trade_form = [ "ticker", "date_bought", "quantity", "total_cost" ];
 
 //=============================================================================================
 // Some library functions
@@ -1067,10 +1075,14 @@ function showTrade(acct,idx)
     for(t in this_trade) {
         let desc = t;
         let ph = "";
+        let sz = 40;
         if (!first) first = t;
+
+        if (t in edit_box_size) sz = edit_box_size[t];
         if (t in col_desc) desc = col_desc[t];
         if (t in place_holders) ph = place_holders[t];
-		x += `<tr><td class=formPrompt>${desc} :</td><td><input placeholder='${ph}' name='${t}' size=40 value='${this_trade[t]}'></td></tr>`;
+
+		x += `<tr><td class=formPrompt>${desc} :</td><td><input placeholder='${ph}' name='${t}' size=${sz} value='${this_trade[t]}'></td></tr>`;
 		}
 
 	x += "<tr><td colspan=2><table width=100% border=0>";
@@ -1096,16 +1108,16 @@ function has_matching_price(yaml)
 	return null;
 }
 
-function account_name(acct) { if (gbl.yaml[acct].name) return gbl.yaml[acct].name; else return acct; }
 
 function show_selected_trades()
 {
-	function add_trades(acct) {
+	function add_trades(acct_idx) {
+		let acct = gbl.yaml.accounts[acct_idx];
 		let x = "";
-		for(let idx in gbl.yaml[acct].stocks) {
-			let t = gbl.yaml[acct].stocks[idx];
+		for(let idx in acct.stocks) {
+			let t = acct.stocks[idx];
 			if ((by_ticker!="-")&&(t.ticker!=by_ticker)) continue;
-			x += `<tr onClick="showTrade('${acct}',${idx})" class=dataRow><td>${account_name(acct)}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
+			x += `<tr onClick="showTrade('${acct}',${idx})" class=dataRow><td>${acct.name}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
 			x += `<td align=right>${t.quantity}</td><td align=right>${flfmt(t.total_cost)}</td>`;
 			let v = has_matching_price(t);
 			if (v) {
@@ -1126,7 +1138,7 @@ function show_selected_trades()
 	for (let h of ["Account","Ticker","Bought","Quantity","Cost","Value"]) x += `<th>${h}</th>`;
 	if (by_acct != "-") x += add_trades(by_acct);
 	else
-		for(let a of gbl.accts) x += add_trades(a);
+		for(let a in gbl.yaml.accounts) x += add_trades(a);
 	e.innerHTML = x + "</table>";
 }
 
@@ -1141,12 +1153,11 @@ function acctSettings()
 		gbl.yaml = data;
 
 		let accts = [];
-		for(let i in gbl.yaml) if (!not_account[i]) accts.push(i);
+		for(let i of gbl.yaml.accounts) accts.push(i.name);
 		gbl.accts = accts.sort();
 		let tickers = [];
-		for(let s of gbl.accts)
-			for(let idx in gbl.yaml[s].stocks) {
-				let t = gbl.yaml[s].stocks[idx];
+		for(let s of gbl.yaml.accounts)
+			for(let t of s.stocks) {
 				if (!tickers.includes(t.ticker)) tickers.push(t.ticker);
 				}
 
@@ -1176,7 +1187,7 @@ function acctSettings()
 			x += "<td>&nbsp;By Ticker: <select onChange='show_selected_trades();' id=byTicker><option value='-'>-- select a ticker --";
 			for(let i of gbl.tickers) x += `<option value="${i}">${i}`;
 			x += "</select></td><td>&nbsp;By Account: <select onChange='show_selected_trades();' id=byAccount><option value='-'>-- select an account --";
-			for(let i of gbl.accts) x += `<option value="${i}">${account_name(i)}`;
+			for(let i in gbl.yaml.accounts) x += `<option value="${i}">${gbl.yaml.accounts[i].name}`;
 			x += "</select></td>"
 			x += "<td>"+btn("addTrade()","Add Trade","Add a trade",{sz:100})+"</td>";
 			x += "<td>"+btn("addAccount()","Add Account","Add an account",{sz:100})+"</td>";
