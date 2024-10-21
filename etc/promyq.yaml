@@ -2,39 +2,56 @@ currency:
   ticker: GBP
   places: 2
 
+buttons:
+  GBP: "https://www.google.com/finance/quote/GBP-USD"
+
 tags:
+  GBPUSD=X:
+    google: GBP-USD
   TSLA:
     sector: auto
 
-hl_sipp:
-  name: "HL SIPP"
+accounts:
+  - name: "HL SIPP"
+    stocks:
+      - ticker: TSLA
+        price: 240.00
+        quantity: 234
+        date_bought: 2022-11-11 11:11:00
+        exchange_rate: 1.28
+        total_cost: 43875
 
-  stocks:
-  - ticker: TSLA
-    price: 240.00
-    quantity: 234
-    date_bought: 2022-11-11 11:11
-    exchange_rate: 1.28
-    total_cost: 43875
+      - ticker: TSLA
+        price: 240.00
+        quantity: 23
+        date_bought: 2022-07-07 07:07:00
+        exchange_rate: 1.28
+        total_cost: 4387
 
-  - ticker: QQQ
-    price: 480.00
-    quantity: 375
-    date_bought: 2022-10-10 10:10
-    exchange_rate: 1.23
-    total_cost: 146341.46
+      - ticker: QQQ
+        price: 480.00
+        quantity: 375
+        date_bought: 2022-10-10 10:10
+        exchange_rate: 1.23
+        total_cost: 146341.46
 
-  - ticker: GAW.L
-    price: 99.99
-    quantity: 77
-    date_bought: 2022-12-12 12:12
-    total_cost: 7699.23
+      - ticker: GAW.L
+        price: 99.99
+        quantity: 77
+        date_bought: 2022-12-12 12:12:00
+        total_cost: 7699.23
 
-crypto:
-  name: "Crypto Account"
-  stocks:
-  - ticker: BTC-USD
-    price: 50000
-    quantity: 0.125
-    date_bought: 2022-13-13 13:13
-    total_cost: 4734.84
+  - name: "Crypto Account"
+    stocks:
+      - ticker: BTC-USD
+        price: 50000
+        quantity: 0.125
+        date_bought: 2022-09-09 09:09
+        total_cost: 4734.84
+
+  - name: "Forex"
+    stocks:
+      - ticker: GBPUSD=X
+        quantity: 0.01
+        date_bought: 2000-01-01 00:00:00
+        total_cost: 0.01
