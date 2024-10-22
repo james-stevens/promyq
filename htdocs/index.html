@@ -47,16 +47,17 @@ var ctx = { };
 var timers = [];
 
 const trade_fields = [
-	{ name: "ticker", desc:"Stock Ticker", len:10, help: "Yahoo Finance stock ticker", in_new: true },
-	{ name: "__when__", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]" },
-	{ name: "date_bought", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]", in_new: true },
+	{ name: "ticker", desc:"Stock Ticker", len:10, help: "Yahoo Finance stock ticker", as_str:true, in_new: true },
+	{ name: "__when__", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]", as_str:true },
+	{ name: "date_bought", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]", as_str:true, in_new: true },
 	{ name: "quantity", desc:"Number of shares", len: 10, help: "Numer of [shares] bought", in_new: true },
 	{ name: "currency", desc:"Currency", len: 10, help: "Currency share is sold in",in_new: true, optional: true },
 	{ name: "price", desc:"Price paid", len: 15, help: "Tickers price at purchase",in_new: true, optional: true },
 	{ name: "exchange_rate", desc:"Exchange rate", len:15, help: "Exchange rate for purchase",in_new: true, optional: true },
 	{ name: "total_cost", desc:"Total cost", len:15, help: "Full cost in your currency", in_new: true },
-	{ name: "account", desc:"Holding Account", len: 30, help: "Holding account" },
-	{ name: "__value__", desc:"Current Value", len: 20, help: "Currency value of this trade" },
+	{ name: "account", desc:"Holding Account", len: 30, help: "Holding account", as_str: true },
+	{ name: "__value__", desc:"Current Value", len: 20, help: "Current value of this trade" },
+	{ name: "__gain__", desc:"Profit / Loss", len: 20, help: "Current profit / loss on this trade" },
 	{ name: "__price_update__", desc:"Last Price Update", len: 20, help: "Date & Time of last price update" },
 	];
 
@@ -145,6 +146,26 @@ function callApi(sfx,callback,inData)
 
 	document.body.style.cursor="auto";
 }
+
+
+
+// This one function is danallison/downloadString.js
+// https://gist.github.com/danallison/3ec9d5314788b337b682
+function downloadFile(text, fileType, fileName) {
+    var blob = new Blob([text], { type: fileType });
+
+    var a = document.createElement('a');
+    a.download = fileName;
+    a.href = URL.createObjectURL(blob);
+    a.dataset.downloadurl = [fileType, a.download, a.href].join(':');
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+// end of -> danallison/downloadString.js
+
 
 
 function to_secs(tm)
@@ -376,6 +397,7 @@ function enrich_trades()
 			}
 
 		t.total_cost = parseFloat(t.total_cost);
+		t.__gain__ = t.__value__ - t.total_cost;
 		t.quantity = parseFloat(t.quantity);
 		t.open = (t.open == "1");
 		}
@@ -1207,13 +1229,30 @@ function acctSettings()
 
 
 
+function downloadCSV()
+{
+	const cols = ["account","ticker","__when__","total_cost","__value__","__gain__"];
+	let csv = "";
+
+	for(let col of cols) csv += `"${field_rev[col].desc}",`;
+	csv += "\r\n";
+	for(let t of gbl.trades) {
+		for(let col of cols)
+			if (field_rev[col].as_str) csv += `"${t.metric[col]}",`; else csv += `${t.metric[col]},`
+		csv += "\r\n";
+		}
+	downloadFile(csv,"text/csv","trades.csv");
+}
+
+
+
 function openURL(url) { window.open(url, '_blank').focus(); }
 function openGrafana() { openURL("/grafana/"); }
 function openPrometheus() { openURL("/prometheus/"); }
 
 function topLine()
 {
-	let sz = 50;
+	let sz = 70;
 
 	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td>";
 
@@ -1230,8 +1269,9 @@ function topLine()
 	x += "<td><div id='showBatch'></div></td>";
 
 	x += "<td><table border=0 cellspacing=0 cellpadding=0><tr>"
+		+ "<td class=btnCell>"+ btn("downloadCSV()","Download","Download the trades value list as CSV",{sz:sz})+"</td>"
 		+ "<td class=btnCell>"+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})+"</td>"
-		+ "<td class=btnCell>"+ btn("openPrometheus()","Data","Open Prometheus in a new window",{sz:sz})+"</td>"
+		+ "<td class=btnCell>"+ btn("openPrometheus()","Database","Open Prometheus in a new window",{sz:sz})+"</td>"
 		+ '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('piesPopup')","Pies","Show Pies",{sz:sz})
 		+ '<span class="popBelowText" style="margin-left: -110px" id="piesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
 
@@ -1240,7 +1280,7 @@ function topLine()
 
 	x += '</table></span></div></td>'
 		+ '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('linesPopup')","Lines","Show line graphs",{sz:sz})
-		+ '<span class="popBelowText" style="margin-left: -110px" id="linesPopup"><table style="width: 100px;" border=0 cellspacing=2 cellpadding=5>';
+		+ '<span class="popBelowText" style="margin-left: -120px" id="linesPopup"><table style="width: 100px;" border=0 cellspacing=2 cellpadding=5>';
 
 	for(let i of ["Week","Total"])
 		x += `<tr class=dataRow onClick="togglePopUp('linesPopup'); line${i}(); return false"><td>${i}</td></tr>`;
