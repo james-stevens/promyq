@@ -46,37 +46,22 @@ var ctx = { };
 
 var timers = [];
 
-const col_desc = {
-	"ticker":"Stock Ticker",
-	"__when__":"When bought",
-	"date_bought":"When bought",
-	"quantity":"Number of shares",
-	"currency":"Currency",
-	"price":"Price paid",
-	"exchange_rate":"Exchange rate",
-	"total_cost":"Total cost",
-	"account":"Holding Account",
-	"__value__":"Current Value",
-	"__price_update__":"Last Price Update"
-	};
+const trade_fields = [
+	{ name: "ticker", desc:"Stock Ticker", len:10, help: "Yahoo Finance stock ticker", in_new: true },
+	{ name: "__when__", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]" },
+	{ name: "date_bought", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]", in_new: true },
+	{ name: "quantity", desc:"Number of shares", len: 10, help: "Numer of [shares] bought", in_new: true },
+	{ name: "currency", desc:"Currency", len: 10, help: "Currency share is sold in",in_new: true, optional: true },
+	{ name: "price", desc:"Price paid", len: 15, help: "Tickers price at purchase",in_new: true, optional: true },
+	{ name: "exchange_rate", desc:"Exchange rate", len:15, help: "Exchange rate for purchase",in_new: true, optional: true },
+	{ name: "total_cost", desc:"Total cost", len:15, help: "Full cost in your currency", in_new: true },
+	{ name: "account", desc:"Holding Account", len: 30, help: "Holding account" },
+	{ name: "__value__", desc:"Current Value", len: 20, help: "Currency value of this trade" },
+	{ name: "__price_update__", desc:"Last Price Update", len: 20, help: "Date & Time of last price update" },
+	];
 
-const edit_box_size = {
-	"date_bought": 20,
-	"ticker": 10,
-	"total_cost": 15,
-	"quantity": 10,
-	"price": 15,
-	"exchange_rate": 15
-	};
-
-const place_holders = {
-	"date_bought": "Date & Time bought - YYYY-MM-DD HH:MM[:SS]",
-	"ticker": "Yahoo Finance stock ticker",
-	"quantity": "Numer of [shares] bought",
-	"total_cost": "Full cost in your currency",
-	};
-
-const new_trade_form = [ "ticker", "date_bought", "quantity", "total_cost" ];
+var field_rev = {};
+for(let fld of trade_fields) field_rev[fld.name] = fld;
 
 //=============================================================================================
 // Some library functions
@@ -785,8 +770,8 @@ function showOneTrade()
 	let this_trade = gbl.trades[ctx.one_trade].metric;
 	let x = "<table align=center>"
 	for(t in this_trade)
-		if ((typeof(this_trade[t]) != "object")&&(col_desc[t] != null))
-			x = x + `<tr class=dataRow><td class=promptCell>${col_desc[t]} :</td><td class=dataCell>${this_trade[t]}</td></tr>`;
+		if ((typeof(this_trade[t]) != "object")&&(field_rev[t] != null))
+			x = x + `<tr class=dataRow><td class=promptCell>${field_rev[t].desc} :</td><td class=dataCell>${this_trade[t]}</td></tr>`;
 	x = x + "</table>"
 	gbl.bot.innerHTML = x;
 }
@@ -1066,31 +1051,48 @@ function backToPrices()
 }
 
 
+function ok_cancel(ok_action)
+{
+	let x = "<tr><td colspan=2><table width=100% border=0>";
+	x += '<tr><td class="btmBtnBar">';
+	x += btn(`${ok_action}`,"OK","Save changes",{sz:100});
+	x += btn(`togglePopUp('oneTradePop')`,"Cancel","Discard changes",{sz:100});
+	x += "</td></tr></table></td></tr>";
+	return x;
+}
+
+
 function showTrade(acct,idx)
 {
-	let this_trade = gbl.yaml[acct].stocks[idx];
-	let e = document.getElementById("oneTradePop");
-    let x = "<form name='oneTradeForm'><table align=center>"
-    let first = null;
-    for(t in this_trade) {
-        let desc = t;
-        let ph = "";
-        let sz = 40;
-        if (!first) first = t;
+	function acct_select(acct) {
+		let xx = "<select name=account>";
+		for(let idx in gbl.yaml.accounts)
+			xx += `<option ${(idx==acct)?"selected":""} value=${idx}>${gbl.yaml.accounts[idx].name}`;
+		return xx + "</select>";
+		}
 
-        if (t in edit_box_size) sz = edit_box_size[t];
-        if (t in col_desc) desc = col_desc[t];
-        if (t in place_holders) ph = place_holders[t];
+	let this_trade = gbl.yaml.accounts[acct].stocks[idx];
+	let e = document.getElementById("oneTradePop");
+	let x = "<form name='oneTradeForm'><table align=center>"
+		+ `<tr><td class=formPrompt>${field_rev["account"].desc} :</td><td>${acct_select(acct)}</td></tr>`;
+	let first = null;
+	for(t in this_trade) {
+		let desc = pretty_prompt(t)
+		let ph = "";
+		let sz = 40;
+		if (!first) first = t;
+
+		if (t in field_rev) {
+			sz = field_rev[t].len;
+			desc = field_rev[t].desc;
+			ph = field_rev[t].help;
+			}
 
 		x += `<tr><td class=formPrompt>${desc} :</td><td><input placeholder='${ph}' name='${t}' size=${sz} value='${this_trade[t]}'></td></tr>`;
 		}
 
-	x += "<tr><td colspan=2><table width=100% border=0>";
-	x += '<tr><td class="btmBtnBar">';
-	x += btn(`saveEditTrade('${acct},${idx})`,"OK","Save changes",{sz:100});
-	x += btn(`togglePopUp('oneTradePop')`,"Cancel","Discard changes",{sz:100});
-    x += "</td></tr></table></td></tr>";
-    e.innerHTML = x+"</table></form>";
+	x += ok_cancel(`saveEditTrade(${acct},${idx})`);
+	e.innerHTML = x+"</table></form>";
 	togglePopUp("oneTradePop",-1);
 	if (first) {
 		document.oneTradeForm.elements[first].focus();
@@ -1099,14 +1101,17 @@ function showTrade(acct,idx)
 }
 
 
-function has_matching_price(yaml)
+
+function find_matching_price(acct_name,yaml_trade)
 {
-	for(let i of gbl.trades) {
-		/* console.log(yaml.ticker,yaml.date_bought==i.metric.when,yaml.ticker == i.metric.ticker); DEBUG */
-		if ((yaml.date_bought == i.metric.when)&&(yaml.ticker == i.metric.ticker)) return i.metric;
-		}
+	for(let i of gbl.trades)
+		if ((acct_name == i.metric.account)
+			&&(yaml_trade.date_bought == i.metric.when)
+			&&(yaml_trade.ticker == i.metric.ticker))
+				return i.metric;
 	return null;
 }
+
 
 
 function show_selected_trades()
@@ -1117,9 +1122,9 @@ function show_selected_trades()
 		for(let idx in acct.stocks) {
 			let t = acct.stocks[idx];
 			if ((by_ticker!="-")&&(t.ticker!=by_ticker)) continue;
-			x += `<tr onClick="showTrade('${acct}',${idx})" class=dataRow><td>${acct.name}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
+			x += `<tr onClick="showTrade(${acct_idx},${idx})" class=dataRow><td>${acct.name}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
 			x += `<td align=right>${t.quantity}</td><td align=right>${flfmt(t.total_cost)}</td>`;
-			let v = has_matching_price(t);
+			let v = find_matching_price(acct.name,t);
 			if (v) {
 				x += `<td align=right>${flfmt(v.__value__)}</td>`;
 				}
@@ -1169,17 +1174,7 @@ function acctSettings()
 
 			if (!((data)&&(data.status)&&(data.status=="success")&&(data.data.result.length > 1))) return errMsg("Failed to fetch prices list");
 			gbl.trades = data.data.result.sort(trade_compare);
-
 			enrich_trades();
-
-			/* DEBUG
-			for(let s of gbl.accts)
-				for(let idx in gbl.yaml[s].stocks) {
-					let t = gbl.yaml[s].stocks[idx];
-					let p = has_matching_price(gbl.yaml[s].stocks[idx]);
-					console.log(t,p);
-					}
-			*/
 
 			let x = "<table width=100% align=center border=0 cellspacing=1 cellpadding=1><tr>";
 			x += '<tr><td class="btmBtnBar">';
@@ -1190,9 +1185,17 @@ function acctSettings()
 			for(let i in gbl.yaml.accounts) x += `<option value="${i}">${gbl.yaml.accounts[i].name}`;
 			x += "</select></td>"
 			x += "<td>"+btn("addTrade()","Add Trade","Add a trade",{sz:100})+"</td>";
-			x += "<td>"+btn("addAccount()","Add Account","Add an account",{sz:100})+"</td>";
+			x += '<td><div class="popBelow">'
+				+ btn("togglePopUp('accountMenu')","Account","Account Menu",{sz:100})
+				+ '<span class="popBelowText" style="margin-left: -137px" id="accountMenu">'
+				+ '<table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
+			for(let i of ["Add","Modify","Delete"])
+				x += `<tr class=dataRow onClick="togglePopUp('accountMenu'); acctMenu${i}(); return false"><td>${i}</td></tr>`;
+			x += '</table></span></td>';
+
 			if (ctx.need_save)
 				x += "<td>"+btn("saveSettings()","Save","Save settings changes",{sz:100})+"</td>";
+
 			x += '</tr></table><span class="popBelowText" style="margin-left: -110px" id="oneTradePop"></span></td></div>';
 			x += "</tr>"
 			x += "<tr><td><div id=tradesList></div></td></tr>";
@@ -1233,14 +1236,14 @@ function topLine()
 		+ '<span class="popBelowText" style="margin-left: -110px" id="piesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
 
 	for(let i of ["Today","Week","Balance","Gain","Cost"])
-		x += `<tr class=dataRow onClick="togglePopUp('piesPopup'); pieBy${i}(); return false"><td>${pretty_prompt(i)}</td></tr>`;
+		x += `<tr class=dataRow onClick="togglePopUp('piesPopup'); pieBy${i}(); return false"><td>${i}</td></tr>`;
 
 	x += '</table></span></div></td>'
 		+ '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('linesPopup')","Lines","Show line graphs",{sz:sz})
-		+ '<span class="popBelowText" style="margin-left: -110px" id="linesPopup"><table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
+		+ '<span class="popBelowText" style="margin-left: -110px" id="linesPopup"><table style="width: 100px;" border=0 cellspacing=2 cellpadding=5>';
 
 	for(let i of ["Week","Total"])
-		x += `<tr class=dataRow onClick="togglePopUp('linesPopup'); line${i}(); return false"><td>${pretty_prompt(i)}</td></tr>`;
+		x += `<tr class=dataRow onClick="togglePopUp('linesPopup'); line${i}(); return false"><td>${i}</td></tr>`;
 	x += '</table></span></div></td>'
 
 	x += "</td></tr><table>";
