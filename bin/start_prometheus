@@ -1,6 +1,11 @@
 #! /bin/sh
 
 if test -z "${PROMYQ_REFRESH_INTERVAL}"; then export PROMYQ_REFRESH_INTERVAL="300s"; fi
+export PROMYQ_TIMEOUT_INTERVAL=$(awk 'BEGIN {
+	refresh = int(ENVIRON["PROMYQ_REFRESH_INTERVAL"])
+	timeout = 60
+	if (refresh < timeout) timeout = int(refresh / 2)
+	print timeout "s" }')
 
 awk '{
 	for (a in ENVIRON) gsub("{{" _ a _ "}}",ENVIRON[a]);
