@@ -91,6 +91,8 @@ function theme_css(theme) {
 	}
 
 .botSpace {
+	width: 75%;
+	display: block;
 	min-width: max-content;
 	margin-left: auto;
 	margin-right: auto;
