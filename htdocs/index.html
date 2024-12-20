@@ -345,7 +345,7 @@ function update_current_prices()
 	let now = Math.floor(Date.now()/1000);
 	let d_now = new Date(Date.now());
 	let s_day = now - (now % 86400);
-	let s_week = s_day - (d_now.getDay() * 86400);
+	let s_week = s_day - (d_now.getDay() * 86400) + 86400; // trading starts on monday, not sunday
 
 	if ((gbl.tm_s_day == s_day)&&(gbl.tm_s_week == s_week)) return redo_current_prices();
 
@@ -485,7 +485,7 @@ function lineWeek()
 	let s_day = now - (now % 86400);
 	let s_start = s_day - (8 * 86400);
 	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=3600`;
-	callApi(qry,(data) => { line_graph_from_data(data.data,"This Week, Hour by Hour"); } );
+	callApi(qry,(data) => { line_graph_from_data(data.data,"Last 7 Days, Hour by Hour"); } );
 }
 
 
@@ -581,7 +581,7 @@ function pieByWeek()
 			}
 		}
 
-	pieChart(my,"Loss / Gain this Week")
+	pieChart(my,(direction >= 0)?"Gain this Week":"Loss this Week");
 }
 
 
@@ -612,7 +612,7 @@ function pieByToday()
 			}
 		}
 
-	pieChart(my,"Loss / Gain Today")
+	pieChart(my,(direction >= 0)?"Gain Today":"Loss Today");
 }
 
 
