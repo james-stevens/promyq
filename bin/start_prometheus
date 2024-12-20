@@ -14,6 +14,7 @@ awk '{
 
 chown root:prometheus /run/prometheus.yml
 chmod 640 /run/prometheus.yml
+mkdir -p /opt/data/prometheus
 chown -R prometheus: /opt/data/prometheus
 
 exec su -s /bin/sh prometheus -c "exec /usr/bin/prometheus \

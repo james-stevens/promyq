@@ -1,5 +1,6 @@
 #! /bin/sh
 
+mkdir -p /opt/data/etc
 if ! test -f /opt/data/etc/htpasswd
 	then
 		cp -a /usr/local/etc/htpasswd /opt/data/etc/htpasswd
