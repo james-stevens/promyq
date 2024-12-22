@@ -714,9 +714,20 @@ function clickRow(ticker)
 		if (x == ticker) return;
 		}
 
-	if (ticker in gbl.trades) {
-		ctx.one_trade = ticker;
-		return refreshRouter();
+	if ((ticker in gbl.trades)&&(gbl.trades[ticker].metric)) {
+		let t = gbl.trades[ticker].metric;
+
+		for(let ia in gbl.yaml.accounts) {
+			let a = gbl.yaml.accounts[ia];
+			if (a.name==t.account) {
+				for(let it in a.stocks) {
+					if (a.stocks[it].ticker == t.ticker) {
+						ctx.show_one_trade = { acct: ia, trade: it };
+						}
+					}
+				}
+			}
+		return acctSettings();
 		}
 
 	if ("openTag" in ctx) {
@@ -1098,6 +1109,7 @@ function ok_cancel(ok_action)
 }
 
 
+
 function showTrade(acct,idx)
 {
 	function acct_select(acct) {
@@ -1165,7 +1177,6 @@ function show_selected_trades()
 				x += `<td align=right>${flfmt(v.__value__)}</td>`;
 				x += `<td align=right>${flfmt(v.__gain__)}</td>`;
 				}
-			// JAMES
 			x += "</tr>";
 			}
 		return x;
@@ -1183,6 +1194,11 @@ function show_selected_trades()
 	else
 		for(let a in gbl.yaml.accounts) x += add_trades(a);
 	e.innerHTML = x + "</table>";
+
+	if (ctx.show_one_trade) {
+		showTrade(ctx.show_one_trade.acct,ctx.show_one_trade.trade);
+		delete ctx.show_one_trade;
+		}
 }
 
 
