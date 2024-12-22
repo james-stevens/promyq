@@ -1,6 +1,11 @@
 #! /bin/sh
 
-if test -z "${PROMYQ_REFRESH_INTERVAL}"; then export PROMYQ_REFRESH_INTERVAL="300s"; fi
+refresh_interval=$(yq .refresh_interval /opt/data/etc/promyq.yaml)
+retention_time=$(yq .retention_time /opt/data/etc/promyq.yaml)
+if test -z "${refresh_interval}"; then refresh_interval="300s"; fi
+if test -z "${retention_time}"; then retention_time="180d"; fi
+export PROMYQ_REFRESH_INTERVAL="${refresh_interval}"
+
 export PROMYQ_TIMEOUT_INTERVAL=$(awk 'BEGIN {
 	refresh = int(ENVIRON["PROMYQ_REFRESH_INTERVAL"])
 	timeout = 60
@@ -21,6 +26,6 @@ exec su -s /bin/sh prometheus -c "exec /usr/bin/prometheus \
 	--web.listen-address="127.0.0.1:9090" \
 	--web.external-url=/prometheus/ \
 	--storage.tsdb.path=/opt/data/prometheus \
-	--storage.tsdb.retention.time=${PROMYQ_RETENTION_TIME:-180d} \
+	--storage.tsdb.retention.time=${retention_time} \
 	--config.file=/run/prometheus.yml" 2>&1 \
 	| exec su -s /bin/sh nobody -c "exec logger -t prometheus -p ${PROMYQ_FACILITY:-local1}.${PROMYQ_SEVERITY:-info}"

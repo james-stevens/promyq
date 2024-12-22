@@ -1,3 +1,6 @@
+refresh_interval: 300s
+retention_time: 365d
+
 currency:
   ticker: GBP
   places: 2

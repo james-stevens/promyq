@@ -3,7 +3,7 @@
 
 FROM alpine:3.18
 
-RUN apk add python3 jq py-pip py3-requests
+RUN apk add python3 yq jq py-pip py3-requests
 RUN pip install yahooquery
 RUN pip install yahooquery --upgrade
 

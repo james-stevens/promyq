@@ -456,6 +456,7 @@ function refreshBtnTag(text)
 {
 	let e = document.getElementById("refreshBtn");
 	if (e) e.innerHTML = text;
+	if (text=="Refresh") gbl.btn.innerHTML = gbl.btn_table;
 }
 
 
@@ -962,16 +963,18 @@ function startUp()
 	gbl.with_https = (window.location.protocol == "https:");
 	gbl.server = window.location.host;
 
+
 	gbl.bot = document.getElementById("userSpace");
 	gbl.top = document.getElementById("topSpan");
 
 	topLine();
+	gbl.btn = document.getElementById("actionButtons");
+	gbl.btn_table = make_table_buttons();
+	gbl.btn.innerHTML = gbl.btn_table;
+
 	callApi("/promyq/config",data => {
 		if (data) {
 			gbl.config = data;
-			gbl.config.refresh_interval = to_secs(data.refresh_interval),
-			gbl.config.retention_time = to_secs(data.retention_time)
-			gbl.auto_refresh = (gbl.config.refresh_interval / 2) * 1000;
 			}
 		callApi("/promyq/trades",data => {
 			if (!data) return errMsg("Failed to load config");
@@ -980,6 +983,9 @@ function startUp()
 				gbl.places = parseInt(gbl.yaml.currency.places);
 
 			update_current_prices();
+			gbl.config.refresh_interval = to_secs(data.refresh_interval),
+			gbl.config.retention_time = to_secs(data.retention_time)
+			gbl.auto_refresh = (gbl.config.refresh_interval / 2) * 1000;
 			});
 		});
 }
@@ -1157,7 +1163,9 @@ function show_selected_trades()
 			let v = find_matching_price(acct.name,t);
 			if (v) {
 				x += `<td align=right>${flfmt(v.__value__)}</td>`;
+				x += `<td align=right>${flfmt(v.__gain__)}</td>`;
 				}
+			// JAMES
 			x += "</tr>";
 			}
 		return x;
@@ -1170,7 +1178,7 @@ function show_selected_trades()
 	let by_acct = document.getElementById("byAccount").value;
 
 	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
-	for (let h of ["Account","Ticker","Bought","Quantity","Cost","Value"]) x += `<th>${h}</th>`;
+	for (let h of ["Account","Ticker","Bought","Quantity","Cost","Value","+/-"]) x += `<th>${h}</th>`;
 	if (by_acct != "-") x += add_trades(by_acct);
 	else
 		for(let a in gbl.yaml.accounts) x += add_trades(a);
@@ -1183,6 +1191,9 @@ function acctSettings()
 {
 	cancelTimers();
 	refreshBtnTag("Table");
+
+	gbl.btn.innerHTML = "<h2>Other Buttons</h2>";
+
 	callApi("/promyq/trades",data => {
 		if ((!data)||(!Object.keys(data).length)) return errMsg("Failed to fetch trades list");
 		gbl.yaml = data;
@@ -1253,30 +1264,10 @@ function downloadCSV()
 }
 
 
-
-function openURL(url) { window.open(url, '_blank').focus(); }
-function openGrafana() { openURL("/grafana/"); }
-function openPrometheus() { openURL("/prometheus/"); }
-
-function topLine()
+function make_table_buttons()
 {
 	let sz = 70;
-
-	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td>";
-
-	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`;
-	x += "<td class=btnCell>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>";
-	x += "<td class=btnCell>"+ btn("ctx.need_save=false; acctSettings()","Settings","Settings",{sz:sz})+"</td>";
-	x += '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
-			+ `<span class="popBelowText" style="margin-left: -110px" id="themePopup">` + make_theme_popup() + `</span></div></td>`;
-
-	if ("one_trade" in ctx)
-		x += btn("showOneTrade()",gbl.trades[ctx.one_trade].ticker.ticker + "/" + ctx.one_trade,"This Trade");
-
-	x += "</tr></table></td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
-	x += "<td><div id='showBatch'></div></td>";
-
-	x += "<td><table border=0 cellspacing=0 cellpadding=0><tr>"
+	let x = "<table border=0 cellspacing=0 cellpadding=0><tr>"
 		+ "<td class=btnCell>"+ btn("downloadCSV()","Download","Download the trades value list as CSV",{sz:sz})+"</td>"
 		+ "<td class=btnCell>"+ btn("openGrafana()","Graphs","Open Grafana in a new window",{sz:sz})+"</td>"
 		+ "<td class=btnCell>"+ btn("openPrometheus()","Database","Open Prometheus in a new window",{sz:sz})+"</td>"
@@ -1293,8 +1284,31 @@ function topLine()
 	for(let i of ["Week","Total"])
 		x += `<tr class=dataRow onClick="togglePopUp('linesPopup'); line${i}(); return false"><td>${i}</td></tr>`;
 	x += '</table></span></div></td>'
+	return x;
+}
 
-	x += "</td></tr><table>";
+
+
+
+function openURL(url) { window.open(url, '_blank').focus(); }
+function openGrafana() { openURL("/grafana/"); }
+function openPrometheus() { openURL("/prometheus/"); }
+
+function topLine()
+{
+	let sz = 70;
+	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td>";
+	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`;
+	x += "<td class=btnCell>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>";
+	x += "<td class=btnCell>"+ btn("ctx.need_save=false; acctSettings()","Settings","Settings",{sz:sz})+"</td>";
+	x += '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
+			+ `<span class="popBelowText" style="margin-left: -110px" id="themePopup">` + make_theme_popup() + `</span></div></td>`;
+
+	if ("one_trade" in ctx)
+		x += btn("showOneTrade()",gbl.trades[ctx.one_trade].ticker.ticker + "/" + ctx.one_trade,"This Trade");
+
+	x += "</tr></table></td><td width=100% align=center><span class='fullvis' id='showMsg'></span></td>";
+	x += "<td><div id='showBatch'></div></td><td><span id='actionButtons'></span></td></tr><table>";
 
 	gbl.top.innerHTML = x;
 }

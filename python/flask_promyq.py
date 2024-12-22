@@ -34,9 +34,6 @@ def get_version():
 @application.route('/promyq/config', methods=['GET'])
 def get_config():
     my_config = {
-        "refresh_interval":
-        os.environ["PROMYQ_REFRESH_INTERVAL"] if "PROMYQ_REFRESH_INTERVAL" in os.environ else "300s",
-        "retention_time": os.environ["PROMYQ_RETENTION_TIME"] if "PROMYQ_RETENTION_TIME" in os.environ else "180d",
         "version": this_version
     }
     return flask.make_response(flask.jsonify(my_config), 200)
