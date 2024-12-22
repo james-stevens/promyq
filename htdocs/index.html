@@ -344,8 +344,11 @@ function update_current_prices()
 
 	let now = Math.floor(Date.now()/1000);
 	let d_now = new Date(Date.now());
-	let s_day = now - (now % 86400);
-	let s_week = s_day - (d_now.getDay() * 86400) + 86400; // trading starts on monday, not sunday
+	let s_day = now - (now % 86400) - (d_now.getTimezoneOffset() * 60);
+
+	// trading starts on Monday, not Sunday, but getDay() start on Sunday
+	let first_day = (d_now.getDay() + 6) % 7;
+	let s_week = s_day - (first_day * 86400);
 
 	if ((gbl.tm_s_day == s_day)&&(gbl.tm_s_week == s_week)) return redo_current_prices();
 
@@ -355,6 +358,7 @@ function update_current_prices()
 		gbl.start_day = data.data.result;
 		check_updated_both();
 		});
+
 	callApi(`/prometheus/api/v1/query_range?query=trade_current_value&start=${s_week}&end=${s_week+900}&step=300`,data => {
 		gbl.start_week = data.data.result;
 		gbl.tm_s_week = s_week;
