@@ -382,6 +382,7 @@ function redo_current_prices()
 
 		gbl.trades = data.data.result.sort(trade_compare);
 		enrich_trades();
+		make_trades_csv();
 		refreshRouter();
 		});
 }
@@ -1266,7 +1267,15 @@ function acctSettings()
 
 function downloadCSV()
 {
-	const cols = ["account","ticker","__when__","total_cost","__value__","__gain__"];
+	if (ctx.csv) downloadFile(ctx.csv.data,"text/csv",ctx.csv.name);
+	else errMsg("No CSV to download");
+}
+
+
+
+function make_trades_csv()
+{
+	const cols = ["__when__","account","ticker","__value__","total_cost","__gain__"];
 	let csv = "";
 
 	for(let col of cols) csv += `"${field_rev[col].desc}",`;
@@ -1276,7 +1285,7 @@ function downloadCSV()
 			if (field_rev[col].as_str) csv += `"${t.metric[col]}",`; else csv += `${t.metric[col]},`
 		csv += "\r\n";
 		}
-	downloadFile(csv,"text/csv","trades.csv");
+	ctx.csv = { data: csv, name: "trades.csv"};
 }
 
 
