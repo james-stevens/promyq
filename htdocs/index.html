@@ -51,6 +51,7 @@ var timers = [];
 const trade_fields = [
 	{ name: "ticker", desc:"Stock Ticker", len:10, help: "Yahoo Finance stock ticker", as_str:true, in_new: true },
 	{ name: "__when__", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]", as_str:true },
+	{ name: "__when_csv__", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]", as_str:true },
 	{ name: "date_bought", desc:"When bought", len:20, help: "Date & Time bought - YYYY-MM-DD HH:MM[:SS]", as_str:true, in_new: true },
 	{ name: "quantity", desc:"Number of shares", len: 10, help: "Numer of [shares] bought", in_new: true },
 	{ name: "currency", desc:"Currency", len: 10, help: "Currency share is sold in",in_new: true, optional: true },
@@ -397,10 +398,12 @@ function enrich_trades()
 		if (gbl.trades[i].values) value = gbl.trades[i].values[gbl.trades[i].values.length-1];
 		if (gbl.trades[i].value) value = gbl.trades[i].value;
 		if (value) {
+			let d = new Date(t.when);
 			t.__value__ = parseFloat(value[1]);
 			t.__time__ = value[0];
 			t.__price_update__ = new Date(t.__time__ * 1000).toLocaleString();
-			t.__when__ = new Date(t.when).toLocaleString();
+			t.__when__ = d.toLocaleString();
+			t.__when_csv__ = d.toLocaleDateString() +  " " + d.toLocaleTimeString();
 			}
 
 		t.total_cost = parseFloat(t.total_cost);
@@ -413,18 +416,25 @@ function enrich_trades()
 
 
 
-function lineGraph(data,title)
+function lineGraph(data,title,csv_name)
 {
+	let csv = '"When","Value"\r\n';
 	let my = { data: [], label: [] };
 	for (i in data) {
 		my.data.push(data[i].total);
 		my.label.push(data[i].when_dt);
+		csv += `"${data[i].when_csv}",${data[i].total}\r\n`;
 		}
 
 	let now = 0
 	for(i in gbl.trades) now += gbl.trades[i].metric.__value__;
 	my.data.push(now);
 	my.label.push("Now");
+
+	let d = new Date(Date.now());
+	let d_csv = d.toLocaleDateString() +  " " + d.toLocaleTimeString();
+	csv += `"${d_csv}",${flcsv(now)}`;
+	ctx.csv = { data: csv, name: csv_name};
 
 	new Chart(document.getElementById("lineCanvas"), {
 		type: 'line',
@@ -479,7 +489,7 @@ function lineTotal()
 	let s_day = now - (now % 86400);
 	let s_start = s_day - gbl.config.retention_time;
 	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=86400`;
-	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value, All Time",true); } );
+	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value, All Time","end_of_day.csv",true); } );
 }
 
 
@@ -491,12 +501,12 @@ function lineWeek()
 	let s_day = now - (now % 86400);
 	let s_start = s_day - (8 * 86400);
 	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=3600`;
-	callApi(qry,(data) => { line_graph_from_data(data.data,"Last 7 Days, Hour by Hour"); } );
+	callApi(qry,(data) => { line_graph_from_data(data.data,"Last 7 Days, Hour by Hour","last_7_days.csv",false); } );
 }
 
 
 
-function line_graph_from_data(data,title,only_date)
+function line_graph_from_data(data,title,csv_name,only_date)
 {
 	let totals = {}
 	for(let i in data.result) {
@@ -514,9 +524,10 @@ function line_graph_from_data(data,title,only_date)
 	for(let i in sort_spot_values) {
 		let d = new Date(sort_spot_values[i].when_dt*1000);
 		sort_spot_values[i].when_dt = (only_date)?d.toLocaleDateString():d.toLocaleString();
+		sort_spot_values[i].when_csv = (only_date)?d.toLocaleDateString():(d.toLocaleDateString()+" "+d.toLocaleTimeString());
 		}
 
-	lineGraph(sort_spot_values,title);
+	lineGraph(sort_spot_values,title,csv_name);
 }
 
 
@@ -688,6 +699,7 @@ function pieByGain()
 
 
 function flfmt(val) { return val.toLocaleString(undefined,{ minimumFractionDigits: gbl.places, maximumFractionDigits: gbl.places }); }
+function flcsv(val) { return val.toFixed(gbl.places); }
 
 
 
@@ -1305,14 +1317,14 @@ function downloadCSV()
 
 function make_trades_csv()
 {
-	const cols = ["__when__","account","ticker","__value__","total_cost","__gain__"];
+	const cols = ["__when_csv__","account","ticker","__value__","total_cost","__gain__"];
 	let csv = "";
 
 	for(let col of cols) csv += `"${field_rev[col].desc}",`;
 	csv += "\r\n";
 	for(let t of gbl.trades) {
 		for(let col of cols)
-			if (field_rev[col].as_str) csv += `"${t.metric[col]}",`; else csv += `${t.metric[col]},`
+			if (field_rev[col].as_str) csv += `"${t.metric[col]}",`; else csv += `${flcsv(t.metric[col])},`
 		csv += "\r\n";
 		}
 	ctx.csv = { data: csv, name: "trades.csv"};
