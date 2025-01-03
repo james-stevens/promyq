@@ -775,7 +775,7 @@ function makeRow(v,obj)
 	let x = `<tr onClick="clickRow('${v.name}');" class="${showStyle}">`;
 	let dca = v.native_cost / v.num;
 
-	if ((obj)&&("tag" in obj)) x += `<td>${obj.tag}</td>`;
+	if ((obj)&&("tag" in obj)) x += `<td title="${v.acct}">${obj.tag}</td>`;
 	else {
 		if (v.showPrice) {
 			if (v.google)
@@ -840,6 +840,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 	if (!(name in items)) {
 
 		items[name] = {
+			acct: t.account,
 			name: name,
 			week_price: (sw)?(parseFloat(sw.values[0][1]) / sw.metric.quantity) : (t.total_cost / t.quantity),
 			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.metric.quantity) : (t.total_cost / t.quantity),
@@ -1223,6 +1224,7 @@ function show_selected_trades()
 }
 
 function addTrade() { return errMsg("Not implmented, yet"); }
+function users_settings() { return errMsg("Not implmented, yet"); }
 function buttons_settings()
 {
 	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
@@ -1336,8 +1338,9 @@ function make_settings_buttons()
 	let sz = 70;
 	let x = "<table border=0 cellspacing=0 cellpadding=0><tr>"
 		+ "<td class=btnCell>"+ btn("trades_settings()","Trades","View / Edit the your trades",{sz:sz})+"</td>"
-		+ "<td class=btnCell>"+ btn("accounts_settings()","Accounts","View / Edit the your trades",{sz:sz})+"</td>"
-		+ "<td class=btnCell>"+ btn("buttons_settings()","Buttons","View / Edit the your trades",{sz:sz})+"</td>"
+		+ "<td class=btnCell>"+ btn("accounts_settings()","Accounts","View / Edit the accounts",{sz:sz})+"</td>"
+		+ "<td class=btnCell>"+ btn("buttons_settings()","Buttons","View / Edit the power buttons",{sz:sz})+"</td>"
+		+ "<td class=btnCell>"+ btn("users_settings()","Users","View / Edit the logins",{sz:sz})+"</td>"
 		+ "</tr></table>";
 	return x
 }
