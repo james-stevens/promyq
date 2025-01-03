@@ -423,7 +423,7 @@ function lineGraph(data,title,csv_name)
 	for (i in data) {
 		my.data.push(data[i].total);
 		my.label.push(data[i].when_dt);
-		csv += `"${data[i].when_csv}",${data[i].total}\r\n`;
+		csv += `"${data[i].when_csv}",${flcsv(data[i].total)}\r\n`;
 		}
 
 	let now = 0
