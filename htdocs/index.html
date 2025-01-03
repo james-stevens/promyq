@@ -44,7 +44,7 @@ var gbl = {
 changeTheme(gbl.theme);
 
 // will store the context of what the user is up to which the router will use to go back there
-var ctx = { };
+var ctx = { need_save:false };
 
 var timers = [];
 
@@ -287,7 +287,7 @@ function btn(call,txt,hlp,extra) {
 function refreshRouter()
 {
 	if ("one_trade" in ctx) {
-		refreshBtnTag("Table");
+		refreshBtnTag("Prices");
 		showOneTrade()
 		}
 	else {
@@ -466,7 +466,7 @@ function graphMode(name,margin)
 	cancelTimers();
 	ctx = { graphs: true };
 	msg("");
-	refreshBtnTag("Table");
+	refreshBtnTag("Prices");
 	gbl.bot.innerHTML = `<div class="graphDiv"><canvas id=${name} style="margin: ${margin}; background: #ffffff"></canvas></div>`;
 }
 
@@ -728,7 +728,7 @@ function clickRow(ticker)
 					}
 				}
 			}
-		return acctSettings();
+		return settings_mode();
 		}
 
 	if ("openTag" in ctx) {
@@ -982,6 +982,7 @@ function startUp()
 	topLine();
 	gbl.btn = document.getElementById("actionButtons");
 	gbl.btn_table = make_table_buttons();
+	gbl.btn_settings = make_settings_buttons();
 	gbl.btn.innerHTML = gbl.btn_table;
 
 	callApi("/promyq/config",data => {
@@ -1091,12 +1092,19 @@ function msg(myMsg,newClass)
 }
 
 
+
 function backToPrices()
 {
-	ctx = {}
+	if (ctx.need_save) {
+		return errMSg("Need save");
+		}
+
+	ctx = { need_save: false }
 	gbl.last_table_data = "";
+
 	update_current_prices();
 }
+
 
 
 function ok_cancel(ok_action)
@@ -1202,14 +1210,41 @@ function show_selected_trades()
 		}
 }
 
-
-
-function acctSettings()
+function addTrade() { return errMsg("Not implmented, yet"); }
+function buttons_settings()
 {
-	cancelTimers();
-	refreshBtnTag("Table");
+	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
+	x += "<tr><th colspan=2>Buttons</th></tr><tr><th>Button</th><th>URL</th></tr>";
+	for(let i in gbl.yaml.buttons) {
+		let a = gbl.yaml.buttons[i];
+		x += `<tr class=dataRow><td>${i}</td><td>${a}</td></tr>`;
+		}
+	gbl.bot.innerHTML = x+"</table>";
+}
 
-	gbl.btn.innerHTML = "<h2>Other Buttons</h2>";
+
+function accounts_settings()
+{
+	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
+	x += "<tr><th colspan=2>Accounts</th></tr><tr><th>index</th><th>Name</th></tr>";
+	for(let i in gbl.yaml.accounts) {
+		let a = gbl.yaml.accounts[i];
+		x += `<tr class=dataRow><td>${i}</td><td>${a.name}</td></tr>`;
+		}
+	gbl.bot.innerHTML = x+"</table>";
+}
+
+
+function settings_mode()
+{
+	if (ctx.need_save) {
+		return errMSg("Need save");
+		}
+
+	cancelTimers();
+	refreshBtnTag("Prices");
+
+	gbl.btn.innerHTML = gbl.btn_settings;
 
 	callApi("/promyq/trades",data => {
 		if ((!data)||(!Object.keys(data).length)) return errMsg("Failed to fetch trades list");
@@ -1225,41 +1260,36 @@ function acctSettings()
 				}
 
 		gbl.tickers = tickers.sort();
+		trades_settings();
+		});
+}
 
-		let x = "hi";
-		let qry = "/prometheus/api/v1/query?query=trade_current_value";
-		callApi(qry,data => {
 
-			if (!((data)&&(data.status)&&(data.status=="success")&&(data.data.result.length > 1))) return errMsg("Failed to fetch prices list");
-			gbl.trades = data.data.result.sort(trade_compare);
-			enrich_trades();
 
-			let x = "<table width=100% align=center border=0 cellspacing=1 cellpadding=1><tr>";
-			x += '<tr><td class="btmBtnBar">';
-			x += '<div class="popBelow"><table style="min-width: 75%" align=center><tr>';
-			x += "<td>&nbsp;By Ticker: <select onChange='show_selected_trades();' id=byTicker><option value='-'>-- select a ticker --";
-			for(let i of gbl.tickers) x += `<option value="${i}">${i}`;
-			x += "</select></td><td>&nbsp;By Account: <select onChange='show_selected_trades();' id=byAccount><option value='-'>-- select an account --";
-			for(let i in gbl.yaml.accounts) x += `<option value="${i}">${gbl.yaml.accounts[i].name}`;
-			x += "</select></td>"
-			x += "<td>"+btn("addTrade()","Add Trade","Add a trade",{sz:100})+"</td>";
-			x += '<td><div class="popBelow">'
-				+ btn("togglePopUp('accountMenu')","Account","Account Menu",{sz:100})
-				+ '<span class="popBelowText" style="margin-left: -137px" id="accountMenu">'
-				+ '<table style="width: 120px;" border=0 cellspacing=2 cellpadding=5>';
-			for(let i of ["Add","Modify","Delete"])
-				x += `<tr class=dataRow onClick="togglePopUp('accountMenu'); acctMenu${i}(); return false"><td>${i}</td></tr>`;
-			x += '</table></span></td>';
+function trades_settings()
+{
+	let qry = "/prometheus/api/v1/query?query=trade_current_value";
+	callApi(qry,data => {
 
-			if (ctx.need_save)
-				x += "<td>"+btn("saveSettings()","Save","Save settings changes",{sz:100})+"</td>";
+		if (!((data)&&(data.status)&&(data.status=="success")&&(data.data.result.length > 1))) return errMsg("Failed to fetch prices list");
+		gbl.trades = data.data.result.sort(trade_compare);
+		enrich_trades();
 
-			x += '</tr></table><span class="popBelowText" style="margin-left: -110px" id="oneTradePop"></span></td></div>';
-			x += "</tr>"
-			x += "<tr><td><div id=tradesList></div></td></tr>";
-			gbl.bot.innerHTML = x+"</table>";
-			show_selected_trades();
-			});
+		let x = "<table width=100% align=center border=0 cellspacing=1 cellpadding=1><tr>";
+		x += '<tr><td class="btmBtnBar">';
+		x += '<div class="popBelow"><table style="min-width: 75%" align=center><tr>';
+		x += "<td>&nbsp;By Ticker: <select onChange='show_selected_trades();' id=byTicker><option value='-'>-- select a ticker --";
+		for(let i of gbl.tickers) x += `<option value="${i}">${i}`;
+		x += "</select></td><td>&nbsp;By Account: <select onChange='show_selected_trades();' id=byAccount><option value='-'>-- select an account --";
+		for(let i in gbl.yaml.accounts) x += `<option value="${i}">${gbl.yaml.accounts[i].name}`;
+		x += "</select></td>"
+		x += "<td>"+btn("addTrade()","Add Trade","Add a trade",{sz:100})+"</td>";
+
+		x += '</tr></table><span class="popBelowText" style="margin-left: -110px" id="oneTradePop"></span></td></div>';
+		x += "</tr>"
+		x += "<tr><td><div id=tradesList></div></td></tr>";
+		gbl.bot.innerHTML = x+"</table>";
+		show_selected_trades();
 		});
 }
 
@@ -1289,6 +1319,18 @@ function make_trades_csv()
 }
 
 
+function make_settings_buttons()
+{
+	let sz = 70;
+	let x = "<table border=0 cellspacing=0 cellpadding=0><tr>"
+		+ "<td class=btnCell>"+ btn("trades_settings()","Trades","View / Edit the your trades",{sz:sz})+"</td>"
+		+ "<td class=btnCell>"+ btn("accounts_settings()","Accounts","View / Edit the your trades",{sz:sz})+"</td>"
+		+ "<td class=btnCell>"+ btn("buttons_settings()","Buttons","View / Edit the your trades",{sz:sz})+"</td>"
+		+ "</tr></table>";
+	return x
+}
+
+
 function make_table_buttons()
 {
 	let sz = 70;
@@ -1308,7 +1350,7 @@ function make_table_buttons()
 
 	for(let i of ["Week","Total"])
 		x += `<tr class=dataRow onClick="togglePopUp('linesPopup'); line${i}(); return false"><td>${i}</td></tr>`;
-	x += '</table></span></div></td>'
+	x += '</table></span></div></td></tr></table>'
 	return x;
 }
 
@@ -1324,8 +1366,8 @@ function topLine()
 	let sz = 70;
 	let x = "<table style='margin-top:10px;' border=0 cellspacing=0 cellpadding=0 width=100%><tr><td>";
 	x += `<table border=0 cellspacing=0 cellpadding=0><tr>`;
-	x += "<td class=btnCell>"+ btn("backToPrices()","Table","Reload data and redraw table",{id:"refreshBtn",sz:sz})+"</td>";
-	x += "<td class=btnCell>"+ btn("ctx.need_save=false; acctSettings()","Settings","Settings",{sz:sz})+"</td>";
+	x += "<td class=btnCell>"+ btn("backToPrices()","Prices","Reload data and redraw prices table",{id:"refreshBtn",sz:sz})+"</td>";
+	x += "<td class=btnCell>"+ btn("settings_mode()","Settings","Settings",{sz:sz})+"</td>";
 	x += '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('themePopup')","Theme","Change the UI theme",{sz:sz})
 			+ `<span class="popBelowText" style="margin-left: -110px" id="themePopup">` + make_theme_popup() + `</span></div></td>`;
 
