@@ -1224,7 +1224,20 @@ function show_selected_trades()
 }
 
 function addTrade() { return errMsg("Not implmented, yet"); }
-function users_settings() { return errMsg("Not implmented, yet"); }
+
+
+function users_settings()
+{
+	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
+	x += "<tr><th colspan=2>Users</th></tr><tr><th>Username</th><th>Password</th></tr>";
+	for(let i in gbl.yaml.users) {
+		let a = gbl.yaml.users[i];
+		x += `<tr class=dataRow><td>${i}</td><td>${a}</td></tr>`;
+		}
+	gbl.bot.innerHTML = x+"</table>";
+}
+
+
 function buttons_settings()
 {
 	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";

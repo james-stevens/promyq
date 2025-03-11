@@ -1,10 +1,8 @@
 #! /bin/sh
 
 mkdir -p /opt/data/etc
-if ! test -f /opt/data/etc/htpasswd
-	then
-		cp -a /usr/local/etc/htpasswd /opt/data/etc/htpasswd
-	fi
+
+/usr/local/python/promyq.py -p
 
 mkdir -p /run/nginx
 chown nginx: /run/nginx
