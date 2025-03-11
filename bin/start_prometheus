@@ -1,5 +1,7 @@
 #! /bin/sh
 
+rm -f /run/restart_prometheus
+
 refresh_interval=$(yq .refresh_interval /opt/data/etc/promyq.yaml)
 retention_time=$(yq .retention_time /opt/data/etc/promyq.yaml)
 if test -z "${refresh_interval}"; then refresh_interval="300s"; fi

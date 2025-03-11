@@ -30,6 +30,8 @@ RUN ln -s /opt/data/grafana/plugins /usr/share/grafana/plugins
 
 COPY conf /usr/share/grafana/conf/
 
+COPY cron.root /var/spool/cron/crontabs/root
+
 COPY etc /usr/local/etc/
 COPY bin /usr/local/bin/
 

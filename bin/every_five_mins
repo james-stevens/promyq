@@ -1,0 +1,9 @@
+#! /bin/sh
+
+date > /run/five.log
+
+if test -f /run/restart_prometheus
+	then
+		killall prometheus
+		rm -f /run/restart_prometheus
+	fi
