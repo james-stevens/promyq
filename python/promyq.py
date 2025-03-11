@@ -13,6 +13,9 @@ import yahooquery
 
 import log
 
+HTPASSWD_FILE = "/run/htpasswd"
+DEFAULT_USERS = {'admin': '$apr1$NVhiVfuU$we1.RlJAEF/am8qqxmu9..'}
+
 
 class PromyqError(Exception):
     pass
@@ -49,6 +52,18 @@ class PromYQ:
     def current_config(self):
         self.load_file()
         return self.trades
+
+    def write_htpasswd(self):
+        if self.trades is None:
+            self.load_file()
+
+        users = DEFAULT_USERS
+        if "users" in self.trades and len(self.trades["users"]) > 0:
+            users = self.trades["users"]
+
+        with open(HTPASSWD_FILE, "w") as fd:
+            for user in users:
+                fd.write(f"{user}:{users[user]}\n")
 
     def prometheus_metrics(self):
         self.load_file()
@@ -214,7 +229,7 @@ class PromYQ:
             return
 
         this_price = self.prices_got[this_ticker]
-        acct_name = this_acct['name'] if "name" in this_acct else acct
+        acct_name = this_acct['name'] if "name" in this_acct else this_acct
 
         if "regularMarketPrice" not in this_price:
             syslog.syslog(self.log_severity, f"ERROR: regularMarketPrice not in - {this_price}")
@@ -285,9 +300,14 @@ class PromYQ:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PromYQ Run')
     parser.add_argument("-j", '--json', action="store_true")
+    parser.add_argument("-p", '--htpasswd', action="store_true")
     args = parser.parse_args()
 
     my_promyq = PromYQ()
+    if args.htpasswd:
+        my_promyq.write_htpasswd()
+        sys.exit(0)
+
     try:
         prom_metrics = my_promyq.prometheus_metrics()
         if args.json:

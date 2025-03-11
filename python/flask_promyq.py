@@ -33,9 +33,7 @@ def get_version():
 
 @application.route('/promyq/config', methods=['GET'])
 def get_config():
-    my_config = {
-        "version": this_version
-    }
+    my_config = {"version": this_version}
     return flask.make_response(flask.jsonify(my_config), 200)
 
 
@@ -43,7 +41,7 @@ def get_config():
 def get_trades():
     try:
         my_promyq = promyq.PromYQ()
-        return flask.make_response(json.dumps(my_promyq.current_config(),separators=(',', ':'),default=str), 200)
+        return flask.make_response(json.dumps(my_promyq.current_config(), separators=(',', ':'), default=str), 200)
     except promyq.PromyqError as e:
         return flask.make_response(f"{str(e)}", 503)
 
