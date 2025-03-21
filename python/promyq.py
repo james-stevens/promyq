@@ -34,8 +34,10 @@ class PromYQ:
         self.trades = None
         self.prices_want = None
         self.yq_tickers = None
+        self.got_prices = None
+        self.got_ownership = None
         self.forex_want = None
-        self.forex_got = None
+        self.got_forex = None
         self.home_currency = "USD"
         self.decimal_places = 2
         self.log_facility = syslog.LOG_LOCAL1
@@ -113,21 +115,20 @@ class PromYQ:
 
     def all_data_ok(self):
         # check we have all the data we wanted
-        prices_got = self.yq_tickers.price
-        if prices_got is None or len(prices_got) < len(self.prices_want):
-            raise PromyqError("ERROR: prices_got NONE or too small")
+        if self.got_prices is None or len(self.got_prices) < len(self.prices_want):
+            raise PromyqError("ERROR: self.got_prices NONE or too small")
 
         for ticker in self.prices_want:
-            if ticker not in prices_got or "regularMarketPrice" not in prices_got[ticker]:
+            if ticker not in self.got_prices or "regularMarketPrice" not in self.got_prices[ticker]:
                 raise PromyqError(f"ERROR: Required ticker {ticker} missing or has no regularMarketPrice")
 
         if self.forex_want is None or len(self.forex_want) == 0:
             return
-        if self.forex_got is None or len(self.forex_got) < len(self.forex_want):
-            raise PromyqError("ERROR: forex_got NONE or too small")
+        if self.got_forex is None or len(self.got_forex) < len(self.forex_want):
+            raise PromyqError("ERROR: got_forex NONE or too small")
 
         for cur in self.forex_want:
-            if cur not in self.forex_got or "regularMarketPrice" not in self.forex_got[cur]:
+            if cur not in self.got_forex or "regularMarketPrice" not in self.got_forex[cur]:
                 raise PromyqError(f"ERROR: Required forex {ticker} missing or has no regularMarketPrice")
         return
 
@@ -142,14 +143,18 @@ class PromYQ:
             return price, currency
 
         forex = self.forex_ticker(currency)
-        if forex not in self.forex_got or "regularMarketPrice" not in self.forex_got[forex]:
+        if forex not in self.got_forex or "regularMarketPrice" not in self.got_forex[forex]:
             return None, None
-        return price / self.forex_got[forex]["regularMarketPrice"], self.home_currency
+        return price / self.got_forex[forex]["regularMarketPrice"], self.home_currency
 
     def get_all_prices(self):
         self.yq_tickers = None
+        self.got_prices = None
+        self.got_ownership = None
         try:
             self.yq_tickers = yahooquery.Ticker(self.prices_want)
+            self.got_prices = self.yq_tickers.price
+            self.got_ownership = self.yq_tickers.major_holders
             return
         except Exception as exc:
             syslog.syslog(self.log_severity, str(exc))
@@ -171,31 +176,33 @@ class PromYQ:
         self.prices_want = list(all_tickers)
 
     def get_all_forex(self):
-        prices_got = self.yq_tickers.price
         if self.forex_want is not None and not self.cache_save_required:
-            self.forex_got = {p: prices_got[p] for p in prices_got if is_forex(p)}
+            self.got_forex = {p: self.got_prices[p] for p in self.got_prices if is_forex(p)}
             return
 
-        p_dict = {prices_got[p]["currency"].upper(): True for p in prices_got if "currency" in prices_got[p]}
+        p_dict = {
+            self.got_prices[p]["currency"].upper(): True
+            for p in self.got_prices if "currency" in self.got_prices[p]
+        }
 
         self.forex_want = [self.forex_ticker(p) for p in p_dict if p != self.home_currency]
         if len(self.forex_want) <= 0:
-            self.forex_got = {}
+            self.got_forex = {}
             return
 
-        self.forex_got = None
+        self.got_forex = None
         try:
-            self.forex_got = yahooquery.Ticker(self.forex_want).price
+            self.got_forex = yahooquery.Ticker(self.forex_want).price
             return
         except Exception as exc:
             syslog.syslog(self.log_severity, str(exc))
         raise PromyqError("ERROR: Yahoo query failed to fetch forex")
 
     def ownership_metrics(self, retlist, this_ticker):
-        if this_ticker not in self.yq_tickers.major_holders:
+        if self.got_ownership is None or this_ticker not in self.got_ownership:
             return
 
-        this_ownership = self.yq_tickers.major_holders[this_ticker]
+        this_ownership = self.got_ownership[this_ticker]
         if not isinstance(this_ownership, dict):
             return
 
@@ -208,11 +215,10 @@ class PromYQ:
                        format(this_ownership["institutionsPercentHeld"], ".6f"))
 
     def ticker_metrics(self, retlist, this_ticker):
-        prices_got = self.yq_tickers.price
-        if this_ticker not in prices_got or is_forex(this_ticker):
+        if this_ticker not in self.got_prices or is_forex(this_ticker):
             return
 
-        this_price = prices_got[this_ticker]
+        this_price = self.got_prices[this_ticker]
         if "regularMarketPrice" not in this_price:
             return
 
@@ -241,11 +247,10 @@ class PromYQ:
             return
 
         this_ticker = this_trade["ticker"]
-        prices_got = self.yq_tickers.price
-        if this_ticker not in prices_got:
+        if this_ticker not in self.got_prices:
             return
 
-        this_price = prices_got[this_ticker]
+        this_price = self.got_prices[this_ticker]
         acct_name = this_acct['name'] if "name" in this_acct else this_acct
 
         if "regularMarketPrice" not in this_price:
@@ -316,7 +321,7 @@ class PromYQ:
         ticker_list = []
         for this_ticker in self.prices_want:
             self.ticker_metrics(ticker_list, this_ticker)
-            # self.ownership_metrics(ticker_list, this_ticker)
+            self.ownership_metrics(ticker_list, this_ticker)
         return ticker_list
 
 
@@ -338,8 +343,8 @@ if __name__ == "__main__":
             print(
                 json.dumps({
                     "trades": my_promyq.trades,
-                    "prices": my_promyq.prices_got,
-                    "forex": my_promyq.forex_got
+                    "prices": my_promyq.got_prices,
+                    "forex": my_promyq.got_forex
                 },
                            indent=2))
         else:
