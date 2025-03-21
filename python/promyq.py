@@ -316,7 +316,7 @@ class PromYQ:
         ticker_list = []
         for this_ticker in self.prices_want:
             self.ticker_metrics(ticker_list, this_ticker)
-            self.ownership_metrics(ticker_list, this_ticker)
+            # self.ownership_metrics(ticker_list, this_ticker)
         return ticker_list
 
 
