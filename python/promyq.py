@@ -33,7 +33,7 @@ class PromYQ:
         self.cache = {}
         self.trades = None
         self.prices_want = None
-        self.prices_got = None
+        self.yq_tickers = None
         self.forex_want = None
         self.forex_got = None
         self.home_currency = "USD"
@@ -113,11 +113,12 @@ class PromYQ:
 
     def all_data_ok(self):
         # check we have all the data we wanted
-        if self.prices_got is None or len(self.prices_got) < len(self.prices_want):
+        prices_got = self.yq_tickers.price
+        if prices_got is None or len(prices_got) < len(self.prices_want):
             raise PromyqError("ERROR: prices_got NONE or too small")
 
         for ticker in self.prices_want:
-            if ticker not in self.prices_got or "regularMarketPrice" not in self.prices_got[ticker]:
+            if ticker not in prices_got or "regularMarketPrice" not in prices_got[ticker]:
                 raise PromyqError(f"ERROR: Required ticker {ticker} missing or has no regularMarketPrice")
 
         if self.forex_want is None or len(self.forex_want) == 0:
@@ -146,9 +147,9 @@ class PromYQ:
         return price / self.forex_got[forex]["regularMarketPrice"], self.home_currency
 
     def get_all_prices(self):
-        self.prices_got = None
+        self.yq_tickers = None
         try:
-            self.prices_got = yahooquery.Ticker(self.prices_want).price
+            self.yq_tickers = yahooquery.Ticker(self.prices_want)
             return
         except Exception as exc:
             syslog.syslog(self.log_severity, str(exc))
@@ -170,14 +171,12 @@ class PromYQ:
         self.prices_want = list(all_tickers)
 
     def get_all_forex(self):
+        prices_got = self.yq_tickers.price
         if self.forex_want is not None and not self.cache_save_required:
-            self.forex_got = {p: self.prices_got[p] for p in self.prices_got if is_forex(p)}
+            self.forex_got = {p: prices_got[p] for p in prices_got if is_forex(p)}
             return
 
-        p_dict = {
-            self.prices_got[p]["currency"].upper(): True
-            for p in self.prices_got if "currency" in self.prices_got[p]
-        }
+        p_dict = {prices_got[p]["currency"].upper(): True for p in prices_got if "currency" in prices_got[p]}
 
         self.forex_want = [self.forex_ticker(p) for p in p_dict if p != self.home_currency]
         if len(self.forex_want) <= 0:
@@ -192,11 +191,28 @@ class PromYQ:
             syslog.syslog(self.log_severity, str(exc))
         raise PromyqError("ERROR: Yahoo query failed to fetch forex")
 
-    def ticker_metrics(self, retlist, this_ticker):
-        if this_ticker not in self.prices_got or is_forex(this_ticker):
+    def ownership_metrics(self, retlist, this_ticker):
+        if this_ticker not in self.yq_tickers.major_holders:
             return
 
-        this_price = self.prices_got[this_ticker]
+        this_ownership = self.yq_tickers.major_holders[this_ticker]
+        if not isinstance(this_ownership, dict):
+            return
+
+        infill_dict = {"ticker": this_ticker}
+        infill = "{" + ",".join([f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
+        retlist.append(f"ticker_institutions_count{infill}" + str(int(this_ownership["institutionsCount"])))
+        retlist.append(f"ticker_institutions_float_percent_held{infill}" +
+                       format(this_ownership["institutionsFloatPercentHeld"], ".6f"))
+        retlist.append(f"ticker_institutions_percent_held{infill}" +
+                       format(this_ownership["institutionsPercentHeld"], ".6f"))
+
+    def ticker_metrics(self, retlist, this_ticker):
+        prices_got = self.yq_tickers.price
+        if this_ticker not in prices_got or is_forex(this_ticker):
+            return
+
+        this_price = prices_got[this_ticker]
         if "regularMarketPrice" not in this_price:
             return
 
@@ -225,10 +241,11 @@ class PromYQ:
             return
 
         this_ticker = this_trade["ticker"]
-        if this_ticker not in self.prices_got:
+        prices_got = self.yq_tickers.price
+        if this_ticker not in prices_got:
             return
 
-        this_price = self.prices_got[this_ticker]
+        this_price = prices_got[this_ticker]
         acct_name = this_acct['name'] if "name" in this_acct else this_acct
 
         if "regularMarketPrice" not in this_price:
@@ -274,6 +291,12 @@ class PromYQ:
 
     def get_help_list(self):
         return [
+            "# HELP ticker_institutions_count Number of institutions holding this stock",
+            "# TYPE ticker_institutions_count gauge",
+            "# HELP ticker_institutions_float_percent_held Percent of the stock float held by institutions",
+            "# TYPE ticker_institutions_float_percent_held gauge",
+            "# HELP ticker_institutions_percent_held Percent of all stock held by institutions",
+            "# TYPE ticker_institutions_percent_held gauge",
             f"# HELP trade_current_value Trade current value in {self.home_currency}",
             "# TYPE trade_current_value gauge",
             f"# HELP trade_current_profit Trade current profit in {self.home_currency}",
@@ -293,6 +316,7 @@ class PromYQ:
         ticker_list = []
         for this_ticker in self.prices_want:
             self.ticker_metrics(ticker_list, this_ticker)
+            self.ownership_metrics(ticker_list, this_ticker)
         return ticker_list
 
 
