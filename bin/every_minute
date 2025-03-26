@@ -1,6 +1,9 @@
 #! /bin/sh
 
-date > /run/five.log
+if test /opt/data/etc/promyq.yaml -nt /run/htpasswd
+	then
+		/usr/local/python/promyq.py -p
+	fi
 
 if test -f /run/restart_prometheus
 	then
