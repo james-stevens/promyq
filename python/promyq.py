@@ -13,8 +13,10 @@ import yahooquery
 
 import log
 
+TRADES_FILE = "/opt/data/etc/promyq.yaml"
+CACHE_FILE = "/opt/data/etc/promyq_cache.yaml"
 HTPASSWD_FILE = "/run/htpasswd"
-DEFAULT_USERS = {'admin': '$apr1$NVhiVfuU$we1.RlJAEF/am8qqxmu9..'}
+DEFAULT_USERS = {"admin": "$5$Ceu71sl0w9vr0l8z$biQ3VcpJub0C7NhLr7/Xi0b8ybIkqbw2M.7LtDjOa12"}
 
 
 class PromyqError(Exception):
@@ -27,8 +29,6 @@ def is_forex(ticker):
 
 class PromYQ:
     def __init__(self):
-        self.trades_filename = "/opt/data/etc/promyq.yaml"
-        self.cache_filename = "/opt/data/etc/promyq_cache.yaml"
         self.cache_save_required = False
         self.cache = {}
         self.trades = None
@@ -87,11 +87,11 @@ class PromYQ:
         if not self.cache_save_required or self.forex_want is None:
             return
         data = {"forex": [p[3:6] for p in self.forex_want]}
-        with open(self.cache_filename, "w") as fd:
+        with open(CACHE_FILE, "w") as fd:
             yaml.dump(data, fd, default_flow_style=False)
 
     def load_file(self):
-        with open(self.trades_filename) as fd:
+        with open(TRADES_FILE) as fd:
             self.trades = yaml.load(fd.read(), Loader=yaml.FullLoader)
 
         if "currency" in self.trades:
@@ -101,11 +101,10 @@ class PromYQ:
             if "ticker" in cur:
                 self.home_currency = cur["ticker"]
 
-        if not os.path.isfile(self.cache_filename) or os.path.getmtime(self.trades_filename) > os.path.getmtime(
-                self.cache_filename):
+        if not os.path.isfile(CACHE_FILE) or os.path.getmtime(TRADES_FILE) > os.path.getmtime(CACHE_FILE):
             self.cache_save_required = True
         else:
-            with open(self.cache_filename) as fd:
+            with open(CACHE_FILE) as fd:
                 this_cache = yaml.load(fd.read(), Loader=yaml.FullLoader)
             if "forex" in this_cache:
                 self.forex_want = [self.forex_ticker(p) for p in this_cache["forex"]]
