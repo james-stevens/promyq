@@ -1,11 +1,12 @@
 #! /usr/bin/python3
-# (c) Copyright 2019-2024, James Stevens ... see LICENSE for details
+# (c) Copyright 2019-2025, James Stevens ... see LICENSE for details
 # Alternative license arrangements possible, contact me for more information
 """ module to run the rest/api for user's site web/ui """
 
 import os
 import flask
 import syslog
+from passlib.hash import sha256_crypt
 
 import json
 import promyq
@@ -29,6 +30,14 @@ syslog.openlog("PromYQ", logoption=syslog.LOG_PID, facility=log_facility)
 @application.route('/version', methods=['GET'])
 def get_version():
     return flask.make_response(this_version, 200)
+
+
+@application.route('/promyq/encrypt', methods=['POST'])
+def encrypt_password():
+    js = flask.request.json
+    if js is None or "password" not in js:
+        return flask.make_response("'password' field missing", 499)
+    return flask.make_response(flask.jsonify({"hash": sha256_crypt.using(rounds=5000).hash(js["password"])}), 200)
 
 
 @application.route('/promyq/config', methods=['GET'])
