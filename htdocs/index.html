@@ -102,7 +102,7 @@ function callApi(sfx,callback,inData)
 				'Content-Type': 'application/json'
 				},
 			method: inData.method,
-			body: inData.json
+			body: JSON.stringify(inData.json)
 			}
 		if (!httpCmd.method) httpCmd.method = "GET";
 		if ("okResp" in inData) okResp = inData.okResp;
@@ -211,21 +211,24 @@ function do_theme_change(value)
 
 
 
-function togglePopUp(name,tmout)
+function togglePopUp(name,tmout,do_func)
 {
 	if (!tmout) tmout = 5000;
 	if ("popup" in ctx) {
 		let save_name = ctx.popup.name;
 		hidePopUp();
-		if (save_name==name) { unerrMsg(); return; }
+		if (save_name==name) { unerrMsg(); return false; }
 		}
 
 	let popup = document.getElementById(name);
-	if (popup) popup.classList.toggle("show");
+	if (!popup) { console.log(name," - pop-up not found"); return false; }
+	popup.classList.toggle("show");
 
 	let hide_now = null;
 	if (tmout > 0) hide_now = setTimeout(hidePopUp,tmout);
 	ctx.popup = { "timer": hide_now, "name": name }
+
+	if (do_func) do_func();
 
 	return false;
 }
@@ -1109,7 +1112,7 @@ function msg(myMsg,newClass)
 function backToPrices()
 {
 	if (ctx.need_save) {
-		return errMSg("Need save");
+		return errMsg("Need save");
 		}
 
 	ctx = { need_save: false }
@@ -1120,12 +1123,12 @@ function backToPrices()
 
 
 
-function ok_cancel(ok_action)
+function ok_cancel(ok_action,pop_up_name)
 {
 	let x = "<tr><td colspan=2><table width=100% border=0>";
 	x += '<tr><td class="btmBtnBar">';
 	x += btn(`${ok_action}`,"OK","Save changes",{sz:100});
-	x += btn(`togglePopUp('oneTradePop')`,"Cancel","Discard changes",{sz:100});
+	x += btn(`togglePopUp('${pop_up_name}')`,"Cancel","Discard changes",{sz:100});
 	x += "</td></tr></table></td></tr>";
 	return x;
 }
@@ -1161,7 +1164,7 @@ function showTrade(acct,idx)
 		x += `<tr><td class=formPrompt>${desc} :</td><td><input placeholder='${ph}' name='${t}' size=${sz} value='${this_trade[t]}'></td></tr>`;
 		}
 
-	x += ok_cancel(`saveEditTrade(${acct},${idx})`);
+	x += ok_cancel(`saveEditTrade(${acct},${idx})`,"oneTradePop");
 	e.innerHTML = x+"</table></form>";
 	togglePopUp("oneTradePop",-1);
 	if (first) {
@@ -1226,15 +1229,51 @@ function show_selected_trades()
 function addTrade() { return errMsg("Not implmented, yet"); }
 
 
+function do_add_user()
+{
+	if ((document.addUserForm.username.value=="")||(document.addUserForm.password.value=="")) {
+		document.addUserForm.username.focus();
+		return errMsg("Insufficient Data");
+		}
+
+	js = {
+		"username":document.addUserForm.username.value,
+		"password":document.addUserForm.password.value
+		};
+
+	document.addUserForm.username.value = document.addUserForm.password.value = "";
+	hidePopUp();
+
+	callApi("/promyq/encrypt",(data) => {
+		if ((data.hash)&&(data.username)) {
+			gbl.yaml.users[data.username] = data.hash;
+			users_settings();
+			set_need_save();
+			}
+		}, { method:"POST",json:js });
+}
+
+
+function toggle_user_popup() { togglePopUp("oneUserPop",20000,()=>{ document.addUserForm.username.focus(); }); }
 function users_settings()
 {
+
 	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
+	x += "<tr><td><table width=100% border=0 cellspacing=1 cellpadding=1>";
 	x += "<tr><th colspan=2>Users</th></tr><tr><th>Username</th><th>Password</th></tr>";
 	for(let i in gbl.yaml.users) {
 		let a = gbl.yaml.users[i];
 		x += `<tr class=dataRow><td>${i}</td><td>${a}</td></tr>`;
 		}
-	gbl.bot.innerHTML = x+"</table>";
+	x += "</table></td><td><div class='popBelow'>"+btn("toggle_user_popup()","Add User","Add a user",{sz:100});
+	x += '<span class="popBelowText" style="margin-left: -250px" id="oneUserPop">'
+	x += "<form name=addUserForm><table width=100%>";
+	x += '<tr><td class=formPrompt>Username :</td><td><input size=30 name=username></td></tr>'
+	x += '<tr><td class=formPrompt>Password :</td><td><input autocomplete="new-password" size=30 name=password type=password></td></tr>'
+	x += ok_cancel("do_add_user()","oneUserPop");
+	x += '</table></form></span>';
+	x += "</div></td></tr></table>";
+	gbl.bot.innerHTML = x;
 }
 
 
@@ -1262,10 +1301,17 @@ function accounts_settings()
 }
 
 
+function set_need_save()
+{
+	ctx.need_save = true;
+	refreshBtnTag("Save");
+}
+
+
 function settings_mode()
 {
 	if (ctx.need_save) {
-		return errMSg("Need save");
+		return errMsg("Need save");
 		}
 
 	cancelTimers();
