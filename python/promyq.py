@@ -13,6 +13,8 @@ import yahooquery
 
 import log
 
+from curl_cffi import requests
+
 TRADES_FILE = "/opt/data/etc/promyq.yaml"
 CACHE_FILE = "/opt/data/etc/promyq_cache.yaml"
 HTPASSWD_FILE = "/run/htpasswd"
@@ -151,13 +153,14 @@ class PromYQ:
         self.got_prices = None
         self.got_ownership = None
         try:
-            self.yq_tickers = yahooquery.Ticker(self.prices_want)
+            session = requests.Session(impersonate="chrome")
+            self.yq_tickers = yahooquery.Ticker(self.prices_want, session=session)
             self.got_prices = self.yq_tickers.price
             self.got_ownership = self.yq_tickers.major_holders
             return
         except Exception as exc:
             syslog.syslog(self.log_severity, str(exc))
-        raise PromyqError("ERROR: Yahoo query failed to fetch prices")
+            raise PromyqError(f"ERROR: Yahoo query failed to fetch prices - {str(exc)}")
 
     def get_all_tickers(self):
         self.prices_want = None
@@ -191,11 +194,12 @@ class PromYQ:
 
         self.got_forex = None
         try:
-            self.got_forex = yahooquery.Ticker(self.forex_want).price
+            session = requests.Session(impersonate="chrome")
+            self.got_forex = yahooquery.Ticker(self.forex_want, session=session).price
             return
         except Exception as exc:
             syslog.syslog(self.log_severity, str(exc))
-        raise PromyqError("ERROR: Yahoo query failed to fetch forex")
+            raise PromyqError(f"ERROR: Yahoo query failed to fetch forex - {str(exc)}")
 
     def ownership_metrics(self, retlist, this_ticker):
         if self.got_ownership is None or this_ticker not in self.got_ownership:
