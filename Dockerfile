@@ -3,6 +3,9 @@
 
 FROM alpine:3.18
 
+RUN apk update
+RUN apk upgrade
+
 RUN apk add python3 yq jq py-pip py3-requests py3-passlib
 RUN pip install yahooquery curl_cffi
 RUN pip install yahooquery --upgrade
