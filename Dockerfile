@@ -1,14 +1,14 @@
 # (c) Copyright 2024, James Stevens ... see LICENSE for details
 # Alternative license arrangements are possible, contact me for more information
 
-FROM alpine:3.18
+FROM alpine:3.22
 
 RUN apk update
 RUN apk upgrade
 
 RUN apk add python3 yq jq py-pip py3-requests py3-passlib
-RUN pip install yahooquery curl_cffi
-RUN pip install yahooquery --upgrade
+RUN pip install --break-system-packages yahooquery curl_cffi
+RUN pip install --break-system-packages yahooquery --upgrade
 
 RUN apk add py3-flask py3-gunicorn py3-yaml
 
