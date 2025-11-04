@@ -70,7 +70,7 @@ def get_metrics():
         except promyq.PromyqError as e:
             err = str(e)
             syslog.syslog(syslog.LOG_WARNING, f"WARNING: Fetch prices failed, attempt {id} - {err}")
-    syslog.syslog(syslog.LOG_ERROR, f"ERROR: Fetching trades failed after {MAX_TRIES} attempts")
+    syslog.syslog(syslog.LOG_PERROR, f"ERROR: Fetching trades failed after {MAX_TRIES} attempts")
     return flask.make_response(f"{err}", 503)
 
 

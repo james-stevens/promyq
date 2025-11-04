@@ -254,7 +254,7 @@ class PromYQ:
             return
 
         this_price = self.got_prices[this_ticker]
-        acct_name = this_acct['name'] if "name" in this_acct else this_acct
+        acct_name = this_acct.get('name', None)
 
         if "regularMarketPrice" not in this_price:
             syslog.syslog(self.log_severity, f"ERROR: regularMarketPrice not in - {this_price}")
