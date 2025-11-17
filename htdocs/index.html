@@ -305,14 +305,14 @@ function refreshRouter()
 
 function find_old_item(items,t)
 {
-	if ((!t)||(!items)||(items<1)) return null;
+	if ((!t)||(!items)||(items.length<1)) return null;
 	for(let idx in items) {
 		let d = items[idx];
 		if ((d.metric.account == t.account)
 		 && (d.metric.ticker == t.ticker)
 		 && (d.metric.when == t.when))
 			{
-			if (d.values.length>1) return d; else return null;
+			if (d.values.length>0) return d; else return null;
 			}
 		}
 	return null;
@@ -324,6 +324,16 @@ function find_s_week_item(t) { return find_old_item(gbl.start_week,t); }
 function find_s_day_item(t) { return find_old_item(gbl.start_day,t); }
 
 
+
+function settings_compare(t1,t2)
+{
+	for (let item of ["account","ticker","when"]) {
+		if ((t1.metric[item])&&(t2.metric[item])&&(t1.metric[item]!=t2.metric[item])) {
+				return t1.metric[item].localeCompare(t2.metric[item]);
+			}
+		}
+	return 0;
+}
 
 function trade_compare(t1,t2)
 {
@@ -1345,7 +1355,7 @@ function trades_settings()
 	callApi(qry,data => {
 
 		if (!((data)&&(data.status)&&(data.status=="success")&&(data.data.result.length > 1))) return errMsg("Failed to fetch prices list");
-		gbl.trades = data.data.result.sort(trade_compare);
+		let settings_trades = data.data.result.sort(settings_compare);
 		enrich_trades();
 
 		let x = "<table width=100% align=center border=0 cellspacing=1 cellpadding=1><tr>";

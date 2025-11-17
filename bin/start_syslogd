@@ -1,8 +1,16 @@
 #! /bin/sh
+##########################################################################
+#    (c) Copyright 2021-2025 JRCS Ltd - All Rights Reserved              #
+##########################################################################
 
 if test "${SYSLOG_SERVER}"
 	then
-		exec /sbin/syslogd -n -R ${SYSLOG_SERVER}
-	else
-		exec /sbin/syslogd -n -O -
+		exec /bin/busybox syslogd -n -R ${SYSLOG_SERVER}
 	fi
+if test "${DEBUG_SYSLOG}"
+	then
+		exec /bin/busybox syslogd -n -O -
+	fi
+
+mkdir -p /opt/data/logs
+exec /bin/busybox syslogd -n -b 9 -s 100000 -O /opt/data/logs/messages
