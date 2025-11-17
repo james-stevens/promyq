@@ -44,5 +44,5 @@ RUN python3 -m compileall /opt/pyrar/python/
 COPY inittab /etc/inittab
 COPY htdocs /opt/htdocs/
 
-COPY version /etc/
+COPY build.txt /usr/local/etc/
 CMD [ "/sbin/init" ]

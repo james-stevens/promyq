@@ -16,7 +16,7 @@ MAX_TRIES = 5
 
 application = flask.Flask("PromYQ")
 
-with open("/etc/version") as fd:
+with open("/usr/local/etc/build.txt") as fd:
     this_version = fd.readline().strip()
 
 log_facility = syslog.LOG_LOCAL1
