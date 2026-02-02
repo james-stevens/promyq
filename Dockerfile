@@ -20,7 +20,8 @@ RUN rmdir /var/lib/nginx/tmp /var/log/nginx
 RUN ln -s /dev/shm /var/lib/nginx/tmp
 RUN ln -s /dev/shm /var/log/nginx
 
-RUN apk add prometheus grafana
+RUN apk add prometheus
+RUN apk add grafana
 
 RUN addgroup -S promyq
 RUN adduser -S -G promyq promyq

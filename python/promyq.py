@@ -211,11 +211,14 @@ class PromYQ:
 
         infill_dict = {"ticker": this_ticker}
         infill = "{" + ",".join([f"{idx}=\"{val}\"" for idx, val in infill_dict.items()]) + "} "
-        retlist.append(f"ticker_institutions_count{infill}" + str(int(this_ownership["institutionsCount"])))
-        retlist.append(f"ticker_institutions_float_percent_held{infill}" +
-                       format(this_ownership["institutionsFloatPercentHeld"], ".6f"))
-        retlist.append(f"ticker_institutions_percent_held{infill}" +
-                       format(this_ownership["institutionsPercentHeld"], ".6f"))
+        if "institutionsCount" in this_ownership:
+            retlist.append(f"ticker_institutions_count{infill}" + str(int(this_ownership["institutionsCount"])))
+        if "institutionsFloatPercentHeld" in this_ownership:
+            retlist.append(f"ticker_institutions_float_percent_held{infill}" +
+                           format(this_ownership["institutionsFloatPercentHeld"], ".6f"))
+        if "institutionsPercentHeld" in this_ownership:
+            retlist.append(f"ticker_institutions_percent_held{infill}" +
+                           format(this_ownership["institutionsPercentHeld"], ".6f"))
 
     def ticker_metrics(self, retlist, this_ticker):
         if this_ticker not in self.got_prices or is_forex(this_ticker):
