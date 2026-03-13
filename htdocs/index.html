@@ -1388,7 +1388,7 @@ function downloadCSV()
 
 function make_trades_csv()
 {
-	const cols = ["__when_csv__","account","ticker","__value__","total_cost","__gain__"];
+	const cols = ["__when_csv__","account","ticker","quantity","__value__","total_cost","__gain__"];
 	let csv = "";
 
 	for(let col of cols) csv += `"${field_rev[col].desc}",`;
