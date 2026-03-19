@@ -155,17 +155,17 @@ function callApi(sfx,callback,inData)
 // This one function is danallison/downloadString.js
 // https://gist.github.com/danallison/3ec9d5314788b337b682
 function downloadFile(text, fileType, fileName) {
-    var blob = new Blob([text], { type: fileType });
+	var blob = new Blob([text], { type: fileType });
 
-    var a = document.createElement('a');
-    a.download = fileName;
-    a.href = URL.createObjectURL(blob);
-    a.dataset.downloadurl = [fileType, a.download, a.href].join(':');
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+	var a = document.createElement('a');
+	a.download = fileName;
+	a.href = URL.createObjectURL(blob);
+	a.dataset.downloadurl = [fileType, a.download, a.href].join(':');
+	a.style.display = "none";
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }
 // end of -> danallison/downloadString.js
 
@@ -423,6 +423,7 @@ function enrich_trades()
 		t.__gain__ = t.__value__ - t.total_cost;
 		t.quantity = parseFloat(t.quantity);
 		t.open = (t.open == "1");
+		t.days = Math.round(t.__time__ / 86400) - numDays(t.when);
 		}
 }
 
@@ -801,10 +802,10 @@ function makeRow(v,obj)
 
 	x += valCell(v.cost,0,0);
 	x += valCell(v.value,v.value,v.cost);
-	x += valCell(v.value - v.cost,v.value,v.cost);
-	x += valCell(((v.value - v.cost)/v.cost)*100,v.value,v.cost,"%");
+	x += valCell(v.value - v.cost,v.value,v.cost); // Total Gain
+	x += valCell(((v.value - v.cost)/v.cost)*100,v.value,v.cost,"%"); // Total Gain %age
 
-	x += valCell((v.total_day_gain/v.cost)*100,v.value,v.cost,"%");
+	x += valCell(v.cagr*100,v.value,v.cost,"%"); // Wgt %age
 
 	if (v.showPrice)
 		x += `<td class=none>${flfmt(dca)}</td>`;
@@ -843,10 +844,70 @@ function showOneTrade()
 }
 
 
+function calculateMoneyWeightedReturn(trades) { // XIRR
+	if (!Array.isArray(trades) || trades.length === 0) {
+		throw new Error("trades must be a non-empty array");
+	}
 
+	let totalInvested = 0;
+	let totalFinalValue = 0;
+	let totalDollarYears = 0;
+
+	trades.forEach(trade => {
+		const invested = Math.abs(Number(trade.startValue));
+		const finalValue = Number(trade.endValue);
+		const days = Number(trade.days);
+
+		if (invested <= 0 || days <= 0 || !isFinite(invested) || !isFinite(finalValue)) {
+		  console.warn("Skipping invalid trade:", trade);
+		  return;
+		}
+
+		const years = days / 365.25; // accurate leap-year handling
+
+		totalInvested += invested;
+		totalFinalValue += finalValue;
+		totalDollarYears += invested * years;
+		});
+
+	if (!totalInvested) {
+		throw new Error("No valid investments found");
+	}
+
+	const weightedYears = totalDollarYears / totalInvested;
+
+	// Edge case: very short total exposure
+	if (weightedYears < 0.01) {
+		return (totalFinalValue / totalInvested) - 1;
+	}
+
+	// Core formula: overall multiple raised to (1 / weighted years) - 1
+	const ratio = totalFinalValue / totalInvested;
+	const annualizedReturn = Math.pow(ratio, 1 / weightedYears) - 1;
+
+	return annualizedReturn;
+}
+
+
+function calculateCAGR(startPrice, endPrice, days) {
+
+	if (startPrice <= 0 || endPrice <= 0 || days <= 0) {
+		throw new Error("startPrice, endPrice and days must be positive numbers");
+	}
+
+	const years = days / 365.25;
+
+	const ratio = endPrice / startPrice;
+	const cagr = Math.pow(ratio, 1 / years) - 1;
+
+	return cagr;
+}
+
+
+
+function numDays(dt) { return new Date(dt).getTime() / 1000 / 86400; }
 function summaryItem(items,name,t,showPrice,singleTrade)
 {
-	function numDays(dt) { return new Date(dt).getTime() / 1000 / 86400; }
 	let sw = find_s_week_item(t);
 	let sd = find_s_day_item(t);
 
@@ -859,7 +920,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.metric.quantity) : (t.total_cost / t.quantity),
 			price: t.__value__ / t.quantity,
 			cost: t.total_cost / t.quantity,
-			total_day_gain:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
+			cagr:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
 			single_trade: singleTrade,
 			market_open: t.open,
 			showPrice: showPrice,
@@ -870,9 +931,6 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 
 	let itm = items[name];
 
-	let now = Math.round(t.__time__ / 86400);
-	let buy = numDays(t.when);
-
 	itm.count++;
 	itm.num += t.quantity;
 	itm.native_cost += t.total_cost;
@@ -880,7 +938,8 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 	itm.value += t.__value__,
 	itm.week += (sw)?parseFloat(sw.values[0][1]):t.__value__;
 	itm.day += (sd)?parseFloat(sd.values[0][1]):t.__value__;
-	itm.total_day_gain += ((t.__value__ - t.total_cost) / (now - buy)) * 365.25;
+
+	itm.cagr = calculateCAGR(t.total_cost,t.__value__,t.days);
 }
 
 
@@ -902,6 +961,32 @@ function displayTrades()
 		if (t.__time__ > show_tm) show_tm = t.__time__;
 		}
 
+	for(let a in gbl.sums.accts) {
+		let trlst = [];
+		for(let i in gbl.trades) {
+			let t = gbl.trades[i].metric;
+			if (t.account == a) trlst.push({startValue:t.total_cost,endValue:t.__value__,days:t.days});
+			}
+		gbl.sums.accts[a].cagr = calculateMoneyWeightedReturn(trlst);
+		}
+
+	for(let a in gbl.sums.vals) {
+		let trlst = [];
+		for(let i in gbl.trades) {
+			let t = gbl.trades[i].metric;
+			if (t.ticker == a) trlst.push({startValue:t.total_cost,endValue:t.__value__,days:t.days});
+			}
+		gbl.sums.vals[a].cagr = calculateMoneyWeightedReturn(trlst);
+		}
+
+	let trlst = [];
+	for(let i in gbl.trades) {
+		let t = gbl.trades[i].metric;
+		trlst.push({startValue:t.total_cost,endValue:t.__value__,days:t.days});
+		}
+	gbl.sums.total["Total"].cagr = calculateMoneyWeightedReturn(trlst);
+
+
 	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
 
 	let sz = 100;
@@ -918,7 +1003,7 @@ function displayTrades()
 		}
 
 	x += "<colgroup><col width=150></colgroup>"
-	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>Wgt %</th><th>Cost Avg</th>"
+	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>CAGR</th><th>Cost Avg</th>"
 	x += "<th></th><th>Week +/-</th><th></th><th>Price</th><th>+/-</th><th colspan=2>Day +/-</th>"
 	x += "</tr>"
 
