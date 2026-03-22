@@ -829,8 +829,6 @@ function makeRow(v,obj)
 
 
 
-
-
 function showOneTrade()
 {
 	msg("");
@@ -844,49 +842,75 @@ function showOneTrade()
 }
 
 
-function calculateMoneyWeightedReturn(trades) { // XIRR
-	if (!Array.isArray(trades) || trades.length === 0) {
-		throw new Error("trades must be a non-empty array");
-	}
 
-	let totalInvested = 0;
-	let totalFinalValue = 0;
-	let totalDollarYears = 0;
+function days_diff(d1,d2) { return (d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24); }
 
-	trades.forEach(trade => {
-		const invested = Math.abs(Number(trade.startValue));
-		const finalValue = Number(trade.endValue);
-		const days = Number(trade.days);
+function calculateXIRR(in_cashflows, guess) {
+        const cashflows = in_cashflows
+                .map(cf => ({ date: cf.date, amount: Number(cf.amount) }))
+                .filter(cf => !isNaN(cf.date.getTime()) && !isNaN(cf.amount))
+                .sort((a, b) => a.date - b.date);
 
-		if (invested <= 0 || days <= 0 || !isFinite(invested) || !isFinite(finalValue)) {
-		  console.warn("Skipping invalid trade:", trade);
-		  return;
-		}
+  // Calculates the resulting amount
+  var irrResult = function(cashflows, rate) {
+    var r = rate + 1;
+    var result = cashflows[0].amount;
+    for (var i = 1; i < cashflows.length; i++) {
+      result += cashflows[i].amount / Math.pow(r, days_diff(cashflows[i].date,cashflows[0].date) / 365.25);
+    }
+    return result;
+  }
 
-		const years = days / 365.25; // accurate leap-year handling
+  // Calculates the first derivation
+  var irrResultDeriv = function(cashflows, rate) {
+    var r = rate + 1;
+    var result = 0;
+    for (var i = 1; i < cashflows.length; i++) {
+      var frac = days_diff(cashflows[i].date,cashflows[0].date) / 365.25
+      result -= frac * cashflows[i].amount / Math.pow(r, frac + 1);
+    }
+    return result;
+  }
 
-		totalInvested += invested;
-		totalFinalValue += finalValue;
-		totalDollarYears += invested * years;
-		});
+  // Check that values contains at least one positive value and one negative value
+  var positive = false;
+  var negative = false;
+  for (var i = 0; i < cashflows.length; i++) {
+    if (cashflows[i].amount > 0) positive = true;
+    if (cashflows[i].amount < 0) negative = true;
+  }
 
-	if (!totalInvested) {
-		throw new Error("No valid investments found");
-	}
+  // Return error if values does not contain at least one positive value and one negative value
+  if (!positive || !negative) return '#NUM!';
 
-	const weightedYears = totalDollarYears / totalInvested;
+  // Initialize guess and resultRate
+  var guess = (typeof guess === 'undefined') ? 0.1 : guess;
+  var resultRate = guess;
 
-	// Edge case: very short total exposure
-	if (weightedYears < 0.01) {
-		return (totalFinalValue / totalInvested) - 1;
-	}
+  // Set maximum epsilon for end of iteration
+  var epsMax = 1e-10;
 
-	// Core formula: overall multiple raised to (1 / weighted years) - 1
-	const ratio = totalFinalValue / totalInvested;
-	const annualizedReturn = Math.pow(ratio, 1 / weightedYears) - 1;
+  // Set maximum number of iterations
+  var iterMax = 50;
 
-	return annualizedReturn;
+  // Implement Newton's method
+  var newRate, epsRate, resultValue;
+  var iteration = 0;
+  var contLoop = true;
+  do {
+    resultValue = irrResult(cashflows, resultRate);
+    newRate = resultRate - resultValue / irrResultDeriv(cashflows, resultRate);
+    epsRate = Math.abs(newRate - resultRate);
+    resultRate = newRate;
+    contLoop = (epsRate > epsMax) && (Math.abs(resultValue) > epsMax);
+  } while(contLoop && (++iteration < iterMax));
+
+  if(contLoop) return '#NUM!';
+
+  // Return internal rate of return
+  return resultRate;
 }
+
 
 
 function calculateCAGR(startPrice, endPrice, days) {
@@ -965,26 +989,29 @@ function displayTrades()
 		let trlst = [];
 		for(let i in gbl.trades) {
 			let t = gbl.trades[i].metric;
-			if (t.account == a) trlst.push({startValue:t.total_cost,endValue:t.__value__,days:t.days});
+			if (t.account == a) trlst.push({date:new Date(t.when),amount:-1*t.total_cost});
 			}
-		gbl.sums.accts[a].cagr = calculateMoneyWeightedReturn(trlst);
+		trlst.push({date:new Date(),amount:gbl.sums.accts[a].value});
+		gbl.sums.accts[a].cagr = calculateXIRR(trlst);
 		}
 
 	for(let a in gbl.sums.vals) {
 		let trlst = [];
 		for(let i in gbl.trades) {
 			let t = gbl.trades[i].metric;
-			if (t.ticker == a) trlst.push({startValue:t.total_cost,endValue:t.__value__,days:t.days});
+			if (t.ticker == a) trlst.push({date:new Date(t.when),amount:-1*t.total_cost});
 			}
-		gbl.sums.vals[a].cagr = calculateMoneyWeightedReturn(trlst);
+		trlst.push({date:new Date(),amount:gbl.sums.vals[a].value});
+		gbl.sums.vals[a].cagr = calculateXIRR(trlst);
 		}
 
 	let trlst = [];
 	for(let i in gbl.trades) {
 		let t = gbl.trades[i].metric;
-		trlst.push({startValue:t.total_cost,endValue:t.__value__,days:t.days});
+		trlst.push({date:new Date(t.when),amount:-1*t.total_cost});
 		}
-	gbl.sums.total["Total"].cagr = calculateMoneyWeightedReturn(trlst);
+	trlst.push({date:new Date(),amount:gbl.sums.total["Total"].value});
+	gbl.sums.total["Total"].cagr = calculateXIRR(trlst);
 
 
 	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
