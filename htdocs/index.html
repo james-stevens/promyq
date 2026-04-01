@@ -61,6 +61,7 @@ const trade_fields = [
 	{ name: "account", desc:"Holding Account", len: 30, help: "Holding account", as_str: true },
 	{ name: "__value__", desc:"Current Value", len: 20, help: "Current value of this trade" },
 	{ name: "__gain__", desc:"Profit / Loss", len: 20, help: "Current profit / loss on this trade" },
+	{ name: "cagr", desc:"CAGR", len: 20, help: "CAGR on this trade", places:4 },
 	{ name: "__price_update__", desc:"Last Price Update", len: 20, help: "Date & Time of last price update" },
 	];
 
@@ -714,7 +715,7 @@ function pieByGain()
 
 
 function flfmt(val) { return val.toLocaleString(undefined,{ minimumFractionDigits: gbl.places, maximumFractionDigits: gbl.places }); }
-function flcsv(val) { return val.toFixed(gbl.places); }
+function flcsv(val,places) { return val.toFixed((places)?places:gbl.places); }
 
 
 
@@ -1337,6 +1338,7 @@ function show_selected_trades()
 			if (v) {
 				x += `<td align=right>${flfmt(v.__value__)}</td>`;
 				x += `<td align=right>${flfmt(v.__gain__)}</td>`;
+				x += `<td align=right>${flfmt(v.cagr*100)}%</td>`;
 				}
 			x += "</tr>";
 			}
@@ -1350,7 +1352,7 @@ function show_selected_trades()
 	let by_acct = document.getElementById("byAccount").value;
 
 	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
-	for (let h of ["Account","Ticker","Bought","Quantity","Cost","Value","+/-"]) x += `<th>${h}</th>`;
+	for (let h of ["Account","Ticker","Bought","Quantity","Cost","Value","+/-","CAGR"]) x += `<th>${h}</th>`;
 	if (by_acct != "-") x += add_trades(by_acct);
 	else
 		for(let a in gbl.yaml.accounts) x += add_trades(a);
@@ -1514,14 +1516,14 @@ function downloadCSV()
 
 function make_trades_csv()
 {
-	const cols = ["__when_csv__","account","ticker","quantity","__value__","total_cost","__gain__"];
+	const cols = ["__when_csv__","account","ticker","quantity","__value__","total_cost","__gain__","cagr"];
 	let csv = "";
 
 	for(let col of cols) csv += `"${field_rev[col].desc}",`;
 	csv += "\r\n";
 	for(let t of gbl.trades) {
 		for(let col of cols)
-			if (field_rev[col].as_str) csv += `"${t.metric[col]}",`; else csv += `${flcsv(t.metric[col])},`
+			if (field_rev[col].as_str) csv += `"${t.metric[col]}",`; else csv += `${flcsv(t.metric[col],field_rev[col].places)},`
 		csv += "\r\n";
 		}
 	ctx.csv = { data: csv, name: "trades.csv"};
