@@ -999,7 +999,7 @@ function displayTrades()
 			}
 		let r = gbl.sums.accts[a];
 		trlst.push({date:now,amount:r.value});
-		gbl.sums.accts[a].cagr = calculateXIRR(trlst,(r.value-r.cost)/(r.days/365.25)/r.cost);
+		gbl.sums.accts[a].cagr = calculateXIRR(trlst,calculateCAGR(r.cost,r.value,r.days));
 		}
 
 	for(let a in gbl.sums.vals) {
@@ -1013,7 +1013,7 @@ function displayTrades()
 			}
 		let r = gbl.sums.vals[a];
 		trlst.push({date:now,amount:r.value});
-		gbl.sums.vals[a].cagr = calculateXIRR(trlst,(r.value-r.cost)/(r.days/365.25)/r.cost);
+		gbl.sums.vals[a].cagr = calculateXIRR(trlst,calculateCAGR(r.cost,r.value,r.days));
 		}
 
 	let trlst = [];
@@ -1024,7 +1024,7 @@ function displayTrades()
 		}
 	let r = gbl.sums.total["Total"];
 	trlst.push({date:now,amount:r.value});
-	gbl.sums.total["Total"].cagr = calculateXIRR(trlst,(r.value-r.cost)/(r.days/365.25)/r.cost);
+	gbl.sums.total["Total"].cagr = calculateXIRR(trlst,calculateCAGR(r.cost,r.value,r.days));
 
 	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
 
