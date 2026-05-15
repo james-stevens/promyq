@@ -934,6 +934,8 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 {
 	let sw = find_s_week_item(t);
 	let sd = find_s_day_item(t);
+	let d = new Date(t.when);
+	let now = new Date();
 
 	if (!(name in items)) {
 
@@ -944,7 +946,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 			day_price: (sd)?(parseFloat(sd.values[0][1]) / sd.metric.quantity) : (t.total_cost / t.quantity),
 			price: t.__value__ / t.quantity,
 			cost: t.total_cost / t.quantity,
-			count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
+			days:0, count:0, num:0, native_cost:0, cost: 0, week:0, day:0, value: 0,
 			single_trade: singleTrade,
 			market_open: t.open,
 			showPrice: showPrice,
@@ -956,6 +958,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 	let itm = items[name];
 
 	itm.count++;
+	itm.days += days_diff(now,d);
 	itm.cagr = t.cagr;
 	itm.num += t.quantity;
 	itm.native_cost += t.total_cost;
@@ -987,47 +990,41 @@ function displayTrades()
 	let now = new Date();
 	for(let a in gbl.sums.accts) {
 		let trlst = [];
-		let tot_cagr = 0;
 		for(let i in gbl.trades) {
 			let t = gbl.trades[i].metric;
 			if (t.account == a) {
 				let d = new Date(t.when);
 				trlst.push({date:d,amount:-1*t.total_cost});
-				tot_cagr += t.cagr;
 				}
 			}
-		tot_cagr /= trlst.length;
-		trlst.push({date:now,amount:gbl.sums.accts[a].value});
-		gbl.sums.accts[a].cagr = calculateXIRR(trlst,tot_cagr);
+		let r = gbl.sums.accts[a];
+		trlst.push({date:now,amount:r.value});
+		gbl.sums.accts[a].cagr = calculateXIRR(trlst,(r.value-r.cost)/(r.days/365.25)/r.cost);
 		}
 
 	for(let a in gbl.sums.vals) {
 		let trlst = [];
-		let tot_cagr = 0;
 		for(let i in gbl.trades) {
 			let t = gbl.trades[i].metric;
 			if (t.ticker == a) {
 				let d = new Date(t.when);
 				trlst.push({date:d,amount:-1*t.total_cost});
-				tot_cagr += t.cagr;
 				}
 			}
-		tot_cagr /= trlst.length;
-		trlst.push({date:now,amount:gbl.sums.vals[a].value});
-		gbl.sums.vals[a].cagr = calculateXIRR(trlst,tot_cagr);
+		let r = gbl.sums.vals[a];
+		trlst.push({date:now,amount:r.value});
+		gbl.sums.vals[a].cagr = calculateXIRR(trlst,(r.value-r.cost)/(r.days/365.25)/r.cost);
 		}
 
 	let trlst = [];
-	let tot_cagr = 0;
 	for(let i in gbl.trades) {
 		let t = gbl.trades[i].metric;
 		let d = new Date(t.when);
 		trlst.push({date:d,amount:-1*t.total_cost});
-		tot_cagr += t.cagr;
 		}
-	trlst.push({date:now,amount:gbl.sums.total["Total"].value});
-	tot_cagr /= trlst.length;
-	gbl.sums.total["Total"].cagr = calculateXIRR(trlst,tot_cagr);
+	let r = gbl.sums.total["Total"];
+	trlst.push({date:now,amount:r.value});
+	gbl.sums.total["Total"].cagr = calculateXIRR(trlst,(r.value-r.cost)/(r.days/365.25)/r.cost);
 
 	let multiCur = (Object.keys(gbl.sums.curr).length > 1);
 
