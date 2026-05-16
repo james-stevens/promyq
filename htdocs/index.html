@@ -17,6 +17,10 @@ debugAPI = false;
 
 <script language="Javascript">
 
+const oneDaySec = 86400;
+const oneDayMilli = 86400 * 1000;
+const oneYearDays = 365.25;
+
 console.clear();
 
 var gbl = {
@@ -179,8 +183,8 @@ function to_secs(tm)
 	let last = tm.slice(-1).toLowerCase();
 	if (last=="m") return ret * 60;
 	if (last=="h") return ret * 3600;
-	if (last=="d") return ret * 86400;
-	if (last=="w") return ret * 86400 * 7;
+	if (last=="d") return ret * oneDaySec;
+	if (last=="w") return ret * oneDaySec * 7;
 	return ret;
 }
 
@@ -359,11 +363,11 @@ function update_current_prices()
 
 	let now = Math.floor(Date.now()/1000);
 	let d_now = new Date(Date.now());
-	let s_day = now - (now % 86400) - (d_now.getTimezoneOffset() * 60);
+	let s_day = now - (now % oneDaySec) - (d_now.getTimezoneOffset() * 60);
 
 	// trading starts on Monday, not Sunday, but getDay() start on Sunday
 	let first_day = (d_now.getDay() + 6) % 7;
-	let s_week = s_day - (first_day * 86400);
+	let s_week = s_day - (first_day * oneDaySec);
 
 	if ((gbl.tm_s_day == s_day)&&(gbl.tm_s_week == s_week)) return redo_current_prices();
 
@@ -424,7 +428,7 @@ function enrich_trades()
 		t.__gain__ = t.__value__ - t.total_cost;
 		t.quantity = parseFloat(t.quantity);
 		t.open = (t.open == "1");
-		t.days = Math.round(t.__time__ / 86400) - numDays(t.when);
+		t.days = (t.__time__ / oneDaySec) - numDays(t.when);
 		t.cagr = calculateCAGR(t.total_cost,t.__value__,t.days);
 		}
 }
@@ -502,9 +506,9 @@ function lineTotal()
 {
 	graphMode('lineCanvas',"10px")
 	let now = Math.floor(Date.now()/1000);
-	let s_day = now - (now % 86400);
+	let s_day = now - (now % oneDaySec);
 	let s_start = s_day - gbl.config.retention_time;
-	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=86400`;
+	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=oneDaySec`;
 	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value, All Time","end_of_day.csv",true); } );
 }
 
@@ -514,8 +518,8 @@ function lineWeek()
 {
 	graphMode('lineCanvas',"10px")
 	let now = Math.floor(Date.now()/1000);
-	let s_day = now - (now % 86400);
-	let s_start = s_day - (8 * 86400);
+	let s_day = now - (now % oneDaySec);
+	let s_start = s_day - (8 * oneDaySec);
 	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=3600`;
 	callApi(qry,(data) => { line_graph_from_data(data.data,"Last 7 Days, Hour by Hour","last_7_days.csv",false); } );
 }
@@ -845,7 +849,6 @@ function showOneTrade()
 
 
 
-function days_diff(d1,d2) { return (d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24); }
 
 function calculateXIRR(in_cashflows, guess) {
         const cashflows = in_cashflows
@@ -858,7 +861,7 @@ function calculateXIRR(in_cashflows, guess) {
     var r = rate + 1;
     var result = cashflows[0].amount;
     for (var i = 1; i < cashflows.length; i++) {
-      result += cashflows[i].amount / Math.pow(r, days_diff(cashflows[i].date,cashflows[0].date) / 365.25);
+      result += cashflows[i].amount / Math.pow(r, numYears(days_diff(cashflows[i].date,cashflows[0].date)));
     }
     return result;
   }
@@ -868,7 +871,7 @@ function calculateXIRR(in_cashflows, guess) {
     var r = rate + 1;
     var result = 0;
     for (var i = 1; i < cashflows.length; i++) {
-      var frac = days_diff(cashflows[i].date,cashflows[0].date) / 365.25
+      var frac = numYears(days_diff(cashflows[i].date,cashflows[0].date));
       result -= frac * cashflows[i].amount / Math.pow(r, frac + 1);
     }
     return result;
@@ -915,27 +918,26 @@ function calculateXIRR(in_cashflows, guess) {
 
 
 
-function calculateCAGR(startPrice, endPrice, days) {
-
+function calculateCAGR(startPrice, endPrice, days)
+{
 	if (startPrice <= 0 || endPrice <= 0 || days <= 0) {
 		throw new Error("startPrice, endPrice and days must be positive numbers");
 	}
-
-	const years = days / 365.25;
-
 	const ratio = endPrice / startPrice;
-	return Math.pow(ratio, 1 / years) - 1;
+	return Math.pow(ratio, 1 / numYears(days)) - 1;
 }
 
 
 
-function numDays(dt) { return new Date(dt).getTime() / 1000 / 86400; }
+function days_diff(d1,d2) { return (d1.getTime() - d2.getTime()) / oneDayMilli; }
+function numDays(dt) { return new Date(dt).getTime() / oneDayMilli; }
+function numYears(days) { return days / oneYearDays; }
+
+
 function summaryItem(items,name,t,showPrice,singleTrade)
 {
 	let sw = find_s_week_item(t);
 	let sd = find_s_day_item(t);
-	let d = new Date(t.when);
-	let now = new Date();
 
 	if (!(name in items)) {
 
@@ -958,7 +960,7 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 	let itm = items[name];
 
 	itm.count++;
-	itm.days += days_diff(now,d);
+	itm.days += t.days;
 	itm.cagr = t.cagr;
 	itm.num += t.quantity;
 	itm.native_cost += t.total_cost;
