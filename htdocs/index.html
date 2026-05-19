@@ -508,7 +508,7 @@ function lineTotal()
 	let now = Math.floor(Date.now()/1000);
 	let s_day = now - (now % oneDaySec);
 	let s_start = s_day - gbl.config.retention_time;
-	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=oneDaySec`;
+	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=${oneDaySec}`;
 	callApi(qry,(data) => { line_graph_from_data(data.data,"End of Day Value, All Time","end_of_day.csv",true); } );
 }
 
