@@ -363,7 +363,7 @@ function update_current_prices()
 
 	let now = Math.floor(Date.now()/1000);
 	let d_now = new Date(Date.now());
-	let s_day = now - (now % oneDaySec) - (d_now.getTimezoneOffset() * 60);
+	let s_day = now - (now % oneDaySec) + (d_now.getTimezoneOffset() * 60);
 
 	// trading starts on Monday, not Sunday, but getDay() start on Sunday
 	let first_day = (d_now.getDay() + 6) % 7;
