@@ -455,8 +455,9 @@ function lineGraph(data,title,csv_name,with_now_value)
 		let d = new Date(Date.now());
 		let d_csv = d.toLocaleDateString() +  " " + d.toLocaleTimeString();
 		csv += `"${d_csv}",${flcsv(now)}`;
-		ctx.csv = { data: csv, name: csv_name};
 		}
+
+	ctx.csv = { data: csv, name: csv_name};
 
 	new Chart(document.getElementById("lineCanvas"), {
 		type: 'line',
