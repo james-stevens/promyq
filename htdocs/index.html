@@ -436,7 +436,7 @@ function enrich_trades()
 
 
 
-function lineGraph(data,title,csv_name)
+function lineGraph(data,title,csv_name,with_now_value)
 {
 	let csv = '"When","Value"\r\n';
 	let my = { data: [], label: [] };
@@ -446,15 +446,17 @@ function lineGraph(data,title,csv_name)
 		csv += `"${data[i].when_csv}",${flcsv(data[i].total)}\r\n`;
 		}
 
-	let now = 0
-	for(i in gbl.trades) now += gbl.trades[i].metric.__value__;
-	my.data.push(now);
-	my.label.push("Now");
+	if (with_now_value) {
+		let now = 0
+		for(i in gbl.trades) now += gbl.trades[i].metric.__value__;
+		my.data.push(now);
+		my.label.push("Now");
 
-	let d = new Date(Date.now());
-	let d_csv = d.toLocaleDateString() +  " " + d.toLocaleTimeString();
-	csv += `"${d_csv}",${flcsv(now)}`;
-	ctx.csv = { data: csv, name: csv_name};
+		let d = new Date(Date.now());
+		let d_csv = d.toLocaleDateString() +  " " + d.toLocaleTimeString();
+		csv += `"${d_csv}",${flcsv(now)}`;
+		ctx.csv = { data: csv, name: csv_name};
+		}
 
 	new Chart(document.getElementById("lineCanvas"), {
 		type: 'line',
@@ -502,6 +504,18 @@ function graphMode(name,margin)
 
 
 
+function lineCAGR()
+{
+	graphMode('lineCanvas',"10px")
+	let now = Math.floor(Date.now()/1000);
+	let s_day = now - (now % oneDaySec);
+	let s_start = s_day - gbl.config.retention_time;
+	let qry = `/prometheus/api/v1/query_range?query=trade_current_value&start=${s_start}&end=${now}&step=${oneDaySec}`;
+	callApi(qry,(data) => { cagr_from_data(data.data,"CAGR, All Time","cagr.csv",true); } );
+}
+
+
+
 function lineTotal()
 {
 	graphMode('lineCanvas',"10px")
@@ -526,7 +540,7 @@ function lineWeek()
 
 
 
-function line_graph_from_data(data,title,csv_name,only_date)
+function get_spot_values(data)
 {
 	let totals = {}
 	for(let i in data.result) {
@@ -541,13 +555,37 @@ function line_graph_from_data(data,title,csv_name,only_date)
 	let spot_values = []
 	for(let i in totals) spot_values.push({ total: totals[i], when_dt: parseInt(i) });
 	let sort_spot_values = spot_values.sort((a,b) => (a.when_dt - b.when_dt));
+	return sort_spot_values;
+}
+
+
+
+function cagr_from_data(data,title,csv_name,only_date)
+{
+	let sort_spot_values = get_spot_values(data);
+	let start_when_dt = sort_spot_values[0].when_dt;
+	let start_total = sort_spot_values[0].total;
+	for(let i in sort_spot_values)
+		sort_spot_values[i].total = calculateCAGR(start_total,sort_spot_values[i].total,(sort_spot_values[i].when_dt - start_when_dt) / oneDaySec)*100;
+	line_graph_from_spot_values(sort_spot_values,title,csv_name,only_date,false);
+}
+
+
+
+function line_graph_from_data(data,title,csv_name,only_date)
+{
+	return line_graph_from_spot_values(get_spot_values(data),title,csv_name,only_date,true)
+}
+
+
+function line_graph_from_spot_values(sort_spot_values,title,csv_name,only_date,with_now_value)
+{
 	for(let i in sort_spot_values) {
 		let d = new Date(sort_spot_values[i].when_dt*1000);
 		sort_spot_values[i].when_dt = (only_date)?d.toLocaleDateString():d.toLocaleString();
 		sort_spot_values[i].when_csv = (only_date)?d.toLocaleDateString():(d.toLocaleDateString()+" "+d.toLocaleTimeString());
 		}
-
-	lineGraph(sort_spot_values,title,csv_name);
+	lineGraph(sort_spot_values,title,csv_name,with_now_value);
 }
 
 
@@ -851,10 +889,10 @@ function showOneTrade()
 
 
 function calculateXIRR(in_cashflows, guess) {
-        const cashflows = in_cashflows
-                .map(cf => ({ date: cf.date, amount: Number(cf.amount) }))
-                .filter(cf => !isNaN(cf.date.getTime()) && !isNaN(cf.amount))
-                .sort((a, b) => a.date - b.date);
+	const cashflows = in_cashflows
+			.map(cf => ({ date: cf.date, amount: Number(cf.amount) }))
+			.filter(cf => !isNaN(cf.date.getTime()) && !isNaN(cf.amount))
+			.sort((a, b) => a.date - b.date);
 
   // Calculates the resulting amount
   var irrResult = function(cashflows, rate) {
@@ -920,6 +958,7 @@ function calculateXIRR(in_cashflows, guess) {
 
 function calculateCAGR(startPrice, endPrice, days)
 {
+	if (days == 0) days = 1;
 	if (startPrice <= 0 || endPrice <= 0 || days <= 0) {
 		throw new Error("startPrice, endPrice and days must be positive numbers");
 	}
@@ -1559,7 +1598,7 @@ function make_table_buttons()
 		+ '<td class=btnCell><div class="popBelow">' + btn("togglePopUp('linesPopup')","Lines","Show line graphs",{sz:sz})
 		+ '<span class="popBelowText" style="margin-left: -120px" id="linesPopup"><table style="width: 100px;" border=0 cellspacing=2 cellpadding=5>';
 
-	for(let i of ["Week","Total"])
+	for(let i of ["Week","Total","CAGR"])
 		x += `<tr class=dataRow onClick="togglePopUp('linesPopup'); line${i}(); return false"><td>${i}</td></tr>`;
 	x += '</table></span></div></td></tr></table>'
 	return x;
