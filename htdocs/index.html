@@ -66,8 +66,19 @@ const trade_fields = [
 	{ name: "__value__", desc:"Current Value", len: 20, help: "Current value of this trade" },
 	{ name: "__gain__", desc:"Profit / Loss", len: 20, help: "Current profit / loss on this trade" },
 	{ name: "cagr", desc:"CAGR", len: 20, help: "CAGR on this trade", places:4 },
+	{ name: "__qtype__", desc:"Quote Type", len: 20, help: "Ticker underlying type", as_str: true },
 	{ name: "__price_update__", desc:"Last Price Update", len: 20, help: "Date & Time of last price update" },
 	];
+
+const quote_type_tags = {
+	"CRYPTOCURRENCY": "&#x20BF;",
+	"ETF": "&#x1F3E6;",
+	"ETF-UP": "&#x1F3E6;",
+	"ETF-DOWN": "&#x1F4B8;",
+	"EQUITY": "&#x1F4C8;",
+	"EQUITY-UP": "&#x1F4C8;",
+	"EQUITY-DOWN": "&#x1F4C9;",
+	};
 
 var field_rev = {};
 for(let fld of trade_fields) field_rev[fld.name] = fld;
@@ -238,6 +249,12 @@ function togglePopUp(name,tmout,do_func)
 	return false;
 }
 
+
+
+function pretty_tag(tag) {
+	if (tag) return tag[0].toUpperCase() + tag.substr(1).toLowerCase();
+	return "";
+}
 
 
 function pretty_prompt(tag)
@@ -430,6 +447,7 @@ function enrich_trades()
 		t.open = (t.open == "1");
 		t.days = (t.__time__ / oneDaySec) - numDays(t.when);
 		t.cagr = calculateCAGR(t.total_cost,t.__value__,t.days);
+		t.__qtype__ = t.quotetype;
 		}
 }
 
@@ -832,17 +850,28 @@ function makeRow(v,obj)
 	if ((v.showPrice)&&(!v.market_open)) showStyle = "marketOff";
 
 	let x = `<tr onClick="clickRow('${v.name}');" class="${showStyle}">`;
+
+	let maybe_type = v.qtype + ((v.value > v.cost)?"-UP":"-DOWN");
+	let type_icon = "";
+
+	if (maybe_type in quote_type_tags) type_icon = quote_type_tags[maybe_type];
+	else if (v.qtype in quote_type_tags) type_icon = quote_type_tags[v.qtype];
+	x += `<td>${type_icon}</td>`;
+
 	let dca = v.native_cost / v.num;
 
 	if ((obj)&&("tag" in obj)) x += `<td title="${v.acct}">${obj.tag}</td>`;
 	else {
+		let ptag = ((obj)&&(obj.pretty))?pretty_tag(v.name):v.name;
+		if ((obj)&&(obj.make_bold)) ptag = `<b>${ptag}</b>`;
+
 		if (v.showPrice) {
 			if (v.google)
-				x += `<td><a onClick="blockClicked('${v.name}');" href="https://www.google.com/finance/quote/${v.google}" target=_window>${v.name}</a></td>`;
+				x += `<td><a onClick="blockClicked('${v.name}');" href="https://www.google.com/finance/quote/${v.google}" target=_window>${ptag}</a></td>`;
 			else
-				x += `<td><a onClick="blockClicked('${v.name}');" href="https://finance.yahoo.com/quote/${v.name}/" target=_window>${v.name}</a></td>`;
+				x += `<td><a onClick="blockClicked('${v.name}');" href="https://finance.yahoo.com/quote/${v.name}/" target=_window>${ptag}</a></td>`;
 			}
-		else x += `<td>${v.name}</td>`;
+		else { x += `<td>${ptag}</td>`; }
 		}
 
 	x += valCell(v.cost,0,0);
@@ -993,7 +1022,8 @@ function summaryItem(items,name,t,showPrice,singleTrade)
 			market_open: t.open,
 			showPrice: showPrice,
 			google: t.google,
-			currency: t.currency
+			currency: t.currency,
+			qtype: t.__qtype__
 			};
 		}
 
@@ -1018,12 +1048,13 @@ function displayTrades()
 {
 	let show_tm = gbl.trades[0].metric.__time__;
 
-	gbl.sums = { ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
+	gbl.sums = { qtype: {}, ones: {}, vals: {}, accts: {}, curr: {}, total: {} };
 	for(let i in gbl.trades) {
 		let t = gbl.trades[i].metric;
 		summaryItem(gbl.sums.vals,t.ticker,t,true,false);
 		summaryItem(gbl.sums.accts,t.account,t,false,false);
 		summaryItem(gbl.sums.curr,t.currency,t,false,false);
+		summaryItem(gbl.sums.qtype,t.__qtype__,t,false,false);
 		summaryItem(gbl.sums.total,"Total",t,false,false);
 		summaryItem(gbl.sums.ones,i,t,true,true);
 		if (t.__time__ > show_tm) show_tm = t.__time__;
@@ -1058,6 +1089,20 @@ function displayTrades()
 		gbl.sums.vals[a].cagr = calculateXIRR(trlst,calculateCAGR(r.cost,r.value,r.days));
 		}
 
+	for(let a in gbl.sums.qtype) {
+		let trlst = [];
+		for(let i in gbl.trades) {
+			let t = gbl.trades[i].metric;
+			if (t.__qtype__ == a) {
+				let d = new Date(t.when);
+				trlst.push({date:d,amount:-1*t.total_cost});
+				}
+			}
+		let r = gbl.sums.qtype[a];
+		trlst.push({date:now,amount:r.value});
+		gbl.sums.qtype[a].cagr = calculateXIRR(trlst,calculateCAGR(r.cost,r.value,r.days));
+		}
+
 	let trlst = [];
 	for(let i in gbl.trades) {
 		let t = gbl.trades[i].metric;
@@ -1083,8 +1128,8 @@ function displayTrades()
 		x += spaceRow(15);
 		}
 
-	x += "<colgroup><col width=150></colgroup>"
-	x += "<tr><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>CAGR</th><th>Cost Avg</th>"
+	x += "<colgroup><col width=10><col width=150></colgroup>"
+	x += "<tr><th></th><th colspan=1>Ticker</th><th>Cost</th><th>Value</th><th>Total +/-</th><th>Total %</th><th>CAGR</th><th>Cost Avg</th>"
 	x += "<th></th><th>Week +/-</th><th></th><th>Price</th><th>+/-</th><th colspan=2>Day +/-</th>"
 	x += "</tr>"
 
@@ -1095,7 +1140,7 @@ function displayTrades()
 				x += makeRow(gbl.sums.curr[cur],{"sty":"summaryRow"}) + spaceRow(3);
 			cur = gbl.sums.vals[i].currency;
 			}
-		x += makeRow(gbl.sums.vals[i]);
+		x += makeRow(gbl.sums.vals[i],{make_bold:gbl.sums.vals[i].qtype=="ETF"});
 
 		let sty = "none";
 		if (("openTag" in ctx)&&(ctx.openTag == i)) sty = "table-row-group";
@@ -1121,15 +1166,22 @@ function displayTrades()
 
 	x += spaceRow(5);
 
-	let sorted_accts = Object.entries(gbl.sums.accts).sort((a, b) => a[0].localeCompare(b[0]));
+	if (Object.keys(gbl.sums.qtype).length > 0)
+		{
+		for(let i in gbl.sums.qtype)
+			x += makeRow(gbl.sums.qtype[i],{pretty:true});
 
+		x += spaceRow(3);
+		}
+
+	let sorted_accts = Object.entries(gbl.sums.accts).sort((a, b) => a[0].localeCompare(b[0]));
 	for(let i in sorted_accts)
 		x += makeRow(gbl.sums.accts[sorted_accts[i][0]]);
 
 	for(let i in gbl.sums.total)
 		x += makeRow(gbl.sums.total[i],{"sty":"summaryRow"});
 
-	x += `<tr><td class=showVersion colspan=14>v${gbl.config.version}</td></tr>`;
+	x += `<tr><td class=showVersion colspan=15>v${gbl.config.version}</td></tr>`;
 	x += "</table>";
 
 	if (gbl.last_table_data != x) {
@@ -1370,10 +1422,10 @@ function show_selected_trades()
 		let x = "";
 		for(let idx in acct.stocks) {
 			let t = acct.stocks[idx];
-			if ((by_ticker!="-")&&(t.ticker!=by_ticker)) continue;
-			x += `<tr onClick="showTrade(${acct_idx},${idx})" class=dataRow><td>${acct.name}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
-			x += `<td align=right>${t.quantity}</td><td align=right>${flfmt(t.total_cost)}</td>`;
 			let v = find_matching_price(acct.name,t);
+			if ((by_ticker!="-")&&(t.ticker!=by_ticker)) continue;
+			x += `<tr onClick="showTrade(${acct_idx},${idx})" class=dataRow><td>${acct.name}</td><td>${pretty_tag(v.__qtype__)}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
+			x += `<td align=right>${t.quantity}</td><td align=right>${flfmt(t.total_cost)}</td>`;
 			if (v) {
 				x += `<td align=right>${flfmt(v.__value__)}</td>`;
 				x += `<td align=right>${flfmt(v.__gain__)}</td>`;
@@ -1391,7 +1443,7 @@ function show_selected_trades()
 	let by_acct = document.getElementById("byAccount").value;
 
 	let x = "<table style='min-width: 75%' align=center border=0 cellspacing=1 cellpadding=1>";
-	for (let h of ["Account","Ticker","Bought","Quantity","Cost","Value","+/-","CAGR"]) x += `<th>${h}</th>`;
+	for (let h of ["Account","Type","Ticker","Bought","Quantity","Cost","Value","+/-","CAGR"]) x += `<th>${h}</th>`;
 	if (by_acct != "-") x += add_trades(by_acct);
 	else
 		for(let a in gbl.yaml.accounts) x += add_trades(a);
@@ -1555,7 +1607,7 @@ function downloadCSV()
 
 function make_trades_csv()
 {
-	const cols = ["__when_csv__","account","ticker","quantity","__value__","total_cost","__gain__","cagr"];
+	const cols = ["__when_csv__","account","__qtype__","ticker","quantity","__value__","total_cost","__gain__","cagr"];
 	let csv = "";
 
 	for(let col of cols) csv += `"${field_rev[col].desc}",`;
