@@ -249,7 +249,8 @@ function togglePopUp(name,tmout,do_func)
 
 
 function pretty_tag(tag) {
-	return tag[0].toUpperCase() + tag.substr(1).toLowerCase();
+	if (tag) return tag[0].toUpperCase() + tag.substr(1).toLowerCase();
+	return "";
 }
 
 
