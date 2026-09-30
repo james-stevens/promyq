@@ -66,6 +66,7 @@ const trade_fields = [
 	{ name: "__value__", desc:"Current Value", len: 20, help: "Current value of this trade" },
 	{ name: "__gain__", desc:"Profit / Loss", len: 20, help: "Current profit / loss on this trade" },
 	{ name: "cagr", desc:"CAGR", len: 20, help: "CAGR on this trade", places:4 },
+	{ name: "__qtype__", desc:"Quote Type", len: 20, help: "Ticker underlying type", as_str: true },
 	{ name: "__price_update__", desc:"Last Price Update", len: 20, help: "Date & Time of last price update" },
 	];
 
@@ -1178,7 +1179,7 @@ function displayTrades()
 	for(let i in gbl.sums.total)
 		x += makeRow(gbl.sums.total[i],{"sty":"summaryRow"});
 
-	x += `<tr><td class=showVersion colspan=14>v${gbl.config.version}</td></tr>`;
+	x += `<tr><td class=showVersion colspan=15>v${gbl.config.version}</td></tr>`;
 	x += "</table>";
 
 	if (gbl.last_table_data != x) {
@@ -1604,7 +1605,7 @@ function downloadCSV()
 
 function make_trades_csv()
 {
-	const cols = ["__when_csv__","account","ticker","quantity","__value__","total_cost","__gain__","cagr"];
+	const cols = ["__when_csv__","account","__qtype__","ticker","quantity","__value__","total_cost","__gain__","cagr"];
 	let csv = "";
 
 	for(let col of cols) csv += `"${field_rev[col].desc}",`;
