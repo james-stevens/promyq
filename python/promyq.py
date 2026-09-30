@@ -283,6 +283,8 @@ class PromYQ:
             infill_dict["total_cost"] = format(this_trade["total_cost"], f".{self.decimal_places}f")
         if "marketState" in this_price:
             infill_dict["open"] = ("1" if this_price['marketState'] == "REGULAR" else "0")
+        if "quoteType" in this_price:
+            infill_dict["quotetype"] = this_price["quoteType"]
 
         # user applied tags
         if "tags" in this_acct:
