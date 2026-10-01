@@ -1166,7 +1166,7 @@ function displayTrades()
 
 	x += spaceRow(5);
 
-	if (Object.keys(gbl.sums.qtype).length > 0)
+	if (Object.keys(gbl.sums.qtype).length > 1)
 		{
 		for(let i in gbl.sums.qtype)
 			x += makeRow(gbl.sums.qtype[i],{pretty:true});
