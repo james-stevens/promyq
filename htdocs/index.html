@@ -845,9 +845,14 @@ function blockClicked(ticker)
 function makeRow(v,obj)
 {
 	let showStyle = "dataRow";
-	if ((obj)&&("sty" in obj)) showStyle = obj.sty;
+	let iconStyle = "iconOn";
 
-	if ((v.showPrice)&&(!v.market_open)) showStyle = "marketOff";
+	if ((obj)&&("sty" in obj)) { showStyle = obj.sty; }
+
+	if ((v.showPrice)&&(!v.market_open)) {
+		showStyle = "marketOff";
+		iconStyle = "iconOff";
+		}
 
 	let x = `<tr onClick="clickRow('${v.name}');" class="${showStyle}">`;
 
@@ -856,7 +861,8 @@ function makeRow(v,obj)
 
 	if (maybe_type in quote_type_tags) type_icon = quote_type_tags[maybe_type];
 	else if (v.qtype in quote_type_tags) type_icon = quote_type_tags[v.qtype];
-	x += `<td>${type_icon}</td>`;
+	if ((obj)&&(obj.no_icon)) type_icon="";
+	x += `<td class="${iconStyle}">${type_icon}</td>`;
 
 	let dca = v.native_cost / v.num;
 
@@ -1166,7 +1172,7 @@ function displayTrades()
 
 	x += spaceRow(5);
 
-	if (Object.keys(gbl.sums.qtype).length > 0)
+	if (Object.keys(gbl.sums.qtype).length > 1)
 		{
 		for(let i in gbl.sums.qtype)
 			x += makeRow(gbl.sums.qtype[i],{pretty:true});
@@ -1176,10 +1182,10 @@ function displayTrades()
 
 	let sorted_accts = Object.entries(gbl.sums.accts).sort((a, b) => a[0].localeCompare(b[0]));
 	for(let i in sorted_accts)
-		x += makeRow(gbl.sums.accts[sorted_accts[i][0]]);
+		x += makeRow(gbl.sums.accts[sorted_accts[i][0]],{no_icon:true});
 
 	for(let i in gbl.sums.total)
-		x += makeRow(gbl.sums.total[i],{"sty":"summaryRow"});
+		x += makeRow(gbl.sums.total[i],{"sty":"summaryRow",no_icon:true});
 
 	x += `<tr><td class=showVersion colspan=15>v${gbl.config.version}</td></tr>`;
 	x += "</table>";
