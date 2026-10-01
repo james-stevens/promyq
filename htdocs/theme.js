@@ -389,6 +389,26 @@ form {
 	color: #${cols[1]};
 	}
 
+.iconOff {
+	font-family:inherit;
+	font-size: inherit;
+	vertical-align: top;
+	padding-left: 7px;
+	padding-right: 7px;
+	white-space: nowrap;
+	opacity: 0.5;
+	}
+
+.iconOn {
+	font-family:inherit;
+	font-size: inherit;
+	vertical-align: top;
+	padding-left: 7px;
+	padding-right: 7px;
+	white-space: nowrap;
+	opacity: 0.8;
+	}
+
 td {
 	font-family:inherit;
 	font-size: inherit;
