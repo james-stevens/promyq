@@ -447,7 +447,7 @@ function enrich_trades()
 		t.open = (t.open == "1");
 		t.days = (t.__time__ / oneDaySec) - numDays(t.when);
 		t.cagr = calculateCAGR(t.total_cost,t.__value__,t.days);
-		t.__qtype__ = t.quotetype;
+		t.__qtype__ = (t.quotetype)?t.quotetype:"";
 		}
 }
 
