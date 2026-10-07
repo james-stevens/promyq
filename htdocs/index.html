@@ -1430,7 +1430,7 @@ function show_selected_trades()
 			let t = acct.stocks[idx];
 			let v = find_matching_price(acct.name,t);
 			if ((by_ticker!="-")&&(t.ticker!=by_ticker)) continue;
-			x += `<tr onClick="showTrade(${acct_idx},${idx})" class=dataRow><td>${acct.name}</td><td>${pretty_tag(v.__qtype__)}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
+			x += `<tr onClick="showTrade(${acct_idx},${idx})" class=dataRow><td>${acct.name}</td><td>${(v)?pretty_tag(v.__qtype__):""}</td><td>${t.ticker}</td><td>${t.date_bought}</td>`;
 			x += `<td align=right>${t.quantity}</td><td align=right>${flfmt(t.total_cost)}</td>`;
 			if (v) {
 				x += `<td align=right>${flfmt(v.__value__)}</td>`;
