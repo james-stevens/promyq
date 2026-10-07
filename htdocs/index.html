@@ -1241,6 +1241,7 @@ function startUp()
 			}
 		callApi("/promyq/trades",data => {
 			if (!data) return errMsg("Failed to load config");
+			if (data.title) document.title = data.title;
 			gbl.yaml = data;
 			if ((gbl.yaml.currency)&&(gbl.yaml.currency.places))
 				gbl.places = parseInt(gbl.yaml.currency.places);
